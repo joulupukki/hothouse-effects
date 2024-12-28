@@ -51,6 +51,7 @@ FOOTSWITCH 2	Delay/Tremolo On/Off  Normal press toggles delay.
 #include "daisysp.h"
 #include "hothouse.h"
 #include "reverbsploodge.h"
+#include "Dattorro.hpp"
 
 using clevelandmusicco::Hothouse;
 using daisy::AudioHandle;
@@ -68,9 +69,39 @@ Hothouse hw;
 
 #define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
 
+Dattorro plateVerb(32000, 16, 4.0);
+bool plateDiffusionEnabled = true;
+double platePreDelay = 0.;
+double previousPreDelay = 0.;
+
+double plateWet = 0.5;
+double plateDry = 0.5;
+
+double plateDecay = 0.877465;
+double plateTimeScale = 1.007500;
+
+double plateDiffusion = 0.75;
+double plateTempDiffusion = 0.625;
+
+double plateInputDampLow = 0.;
+double plateInputDampHigh = 10000.;
+
+double plateDampLow = 0.0;
+double plateDampHigh = 10000.;
+
+double platePreviousInputDampLow = 0.;
+double platePreviousInputDampHigh = 0.;
+
+double platePreviousReverbDampLow = 0.;
+double platePreviousReverbDampHigh = 0.;
+
+const double minus18dBGain = 0.12589254;
+const double minus20dBGain = 0.1;
+
 ReverbSploodge verb;
 Tremolo trem;
-DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMem;
+DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemL;
+DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemR;
 Parameter p_verb_amt;
 Parameter p_trem_speed, p_trem_depth;
 Parameter p_delay_time, p_delay_feedback, p_delay_amt;
@@ -93,7 +124,8 @@ struct Delay {
   }
 };
 
-Delay delay;
+Delay delayL;
+Delay delayR;
 int delay_drywet;
 
 float reverb_tone;
@@ -180,7 +212,7 @@ void check_footswitch2_state(bool is_pressed) {
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
                    size_t size) {
   static float trem_val;
-  float verb_amt;
+  // float verb_amt;
   hw.ProcessAllControls();
 
   if (hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge()) {
@@ -223,40 +255,67 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   //
   // Delay
   //
-  delay.delayTarget = p_delay_time.Process();
-  delay.feedback = p_delay_feedback.Process();
+  delayL.delayTarget = delayR.delayTarget =  p_delay_time.Process();
+  delayL.feedback = delayR.feedback = p_delay_feedback.Process();
   delay_drywet = (int)p_delay_amt.Process();
 
   for (size_t i = 0; i < size; ++i) {
-    float dry = in[0][i]; // Get the incoming signal value (mono)
-    float s, out_l, out_r;
-    s = dry;
+    float dry_L = in[0][i];
+    float dry_R = in[1][i];
+    // float dry = in[0][i]; // Get the incoming signal value (mono)
+    float s_L, s_R;
+    s_L = dry_L;
+    s_R = dry_R;
 
     if (!bypass_delay) {
-      float mix = 0;
+      float mixL = 0;
+      float mixR = 0;
       float fdrywet = (float)delay_drywet / 100.0f;
 
       // update delayline with feedback
-      float sig = delay.Process(s);
-      mix += sig;
+      float sigL = delayL.Process(s_L);
+      float sigR = delayR.Process(s_R);
+      mixL += sigL;
+      mixR += sigR;
 
       // apply drywet and attenuate
-      s = fdrywet * mix * 0.333f + (1.0f - fdrywet) * s;
+      s_L = fdrywet * mixL * 0.333f + (1.0f - fdrywet) * s_L;
+      s_R = fdrywet * mixR * 0.333f + (1.0f - fdrywet) * s_R;
+      // s = fdrywet * mix * 0.333f + (1.0f - fdrywet) * s;
     }
 
     if (!bypass_trem) {
       // trem_val gets used above for pulsing LED
       trem_val = trem.Process(1.f);
-      s = s * trem_val;
+      s_L = s_L * trem_val;
+      s_R = s_R * trem_val;
+      // s = s * trem_val;
     }
     if (!bypass_verb) {
-      verb.Process(s, s, &out_l, &out_r);
-      verb_amt = p_verb_amt.Process();
-      s = (s * (1.0f - verb_amt) + verb_amt * ((out_l + out_r) / 2.0f));
+      // verb.Process(s, s, &out_l, &out_r);
+      // verb_amt = p_verb_amt.Process();
+      // s = (s * (1.0f - verb_amt) + verb_amt * ((out_l + out_r) / 2.0f));
+
+      double leftInput = s_L;
+      double rightInput = s_R;
+      double out_L, out_R;
+
+      plateVerb.process(leftInput * minus18dBGain * minus20dBGain * (1.0 + 0.5 * 7.) * clearPopCancelValue,
+                        rightInput * minus18dBGain * minus20dBGain * (1.0 + 0.5 * 7.) * clearPopCancelValue);
+
+      plateWet = p_verb_amt.Process();;
+      plateDry = 1.0 - plateWet;
+      out_L = ((leftInput * plateDry * 0.1) + (plateVerb.getLeftOutput() * plateWet * clearPopCancelValue));
+      out_R = ((rightInput * plateDry * 0.1) + (plateVerb.getRightOutput() * plateWet * clearPopCancelValue));
+      s_L = s_L * out_L;
+      s_R = s_R * out_R;
+      // s = (s * ((out_l + out_r) / 2.));
     }
 
+    out[0][i] = s_L;
+    out[1][i] = s_R;
     // Quick and dirty dual-mono
-    out[0][i] = out[1][i] = s;
+    // out[0][i] = out[1][i] = s;
   }
 
   // for (size_t i = 0; i < size; ++i) {
@@ -292,11 +351,29 @@ int main() {
   trem.Init(hw.AudioSampleRate());
   trem.SetWaveform(Oscillator::WAVE_SIN); // Only sine wave supported
 
+  // Plate Reverb Defaults
+  // plateVerb.setSampleRate(hw.AudioSampleRate());
+  plateVerb.setSampleRate(16000);
+  plateVerb.setTimeScale(plateTimeScale);
+  plateVerb.setPreDelay(platePreDelay);
+  plateVerb.setInputFilterLowCutoffPitch(10. * plateInputDampLow);
+  plateVerb.setInputFilterHighCutoffPitch(10. - (10. * plateInputDampHigh));
+  plateVerb.enableInputDiffusion(plateDiffusionEnabled);
+  plateVerb.setDecay(plateDecay);
+  plateVerb.setTankDiffusion(plateDiffusion * 0.7);
+  plateVerb.setTankFilterLowCutFrequency(10. * plateDampLow);
+  plateVerb.setTankFilterHighCutFrequency(10. - (10. * plateDampHigh));
+  plateVerb.setTankModSpeed(1.0);
+  plateVerb.setTankModDepth(0.5);
+  plateVerb.setTankModShape(0.5);
+
   verb.Init(hw.AudioSampleRate());
   verb.SetFeedback(0.87);
   
-  delMem.Init();
-  delay.del = &delMem;
+  delMemL.Init();
+  delMemR.Init();
+  delayL.del = &delMemL;
+  delayR.del = &delMemR;
 
   hw.StartAdc();
   hw.StartAudio(AudioCallback);

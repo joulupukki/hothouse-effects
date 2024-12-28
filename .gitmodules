@@ -4,3 +4,6 @@
 [submodule "DaisySP"]
 	path = DaisySP
 	url = https://github.com/electro-smith/DaisySP.git
+[submodule "PlateauNEVersio"]
+	path = PlateauNEVersio
+	url = https://github.com/digitalartifactmusic/PlateauNEVersio.git
