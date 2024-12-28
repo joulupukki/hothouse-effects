@@ -67,18 +67,20 @@ using daisysp::Tremolo;
 
 Hothouse hw;
 
-#define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
+// #define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
+#define MAX_DELAY static_cast<size_t>(32000 * 2.0f) // 4 second max delay
 
 Dattorro plateVerb(32000, 16, 4.0);
 bool plateDiffusionEnabled = true;
 double platePreDelay = 0.;
 double previousPreDelay = 0.;
 
-double plateWet = 0.5;
-double plateDry = 0.5;
+float plateWet = 0.5;
+float plateDry = 0.5;
 
 double plateDecay = 0.877465;
-double plateTimeScale = 1.007500;
+// double plateTimeScale = 1.007500;
+double plateTimeScale = 0.75;
 
 double plateDiffusion = 0.75;
 double plateTempDiffusion = 0.625;
@@ -209,6 +211,10 @@ void check_footswitch2_state(bool is_pressed) {
   footswitch2_last_state = is_pressed;
 }
 
+inline float hardLimit100_(const float &x) {
+    return (x > 1.) ? 1. : ((x < -1.) ? -1. : x);
+}
+
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
                    size_t size) {
   static float trem_val;
@@ -292,24 +298,31 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       // s = s * trem_val;
     }
     if (!bypass_verb) {
-      // verb.Process(s, s, &out_l, &out_r);
-      // verb_amt = p_verb_amt.Process();
-      // s = (s * (1.0f - verb_amt) + verb_amt * ((out_l + out_r) / 2.0f));
+      // float out_l, out_r;
+      // verb.Process(s_L, s_R, &out_l, &out_r);
+      // float verb_amt = p_verb_amt.Process();
+      // s_L = (s_L * (1.0f - verb_amt) + verb_amt * out_l);
+      // s_R = (s_R * (1.0f - verb_amt) + verb_amt * out_r);
 
-      double leftInput = s_L;
-      double rightInput = s_R;
-      double out_L, out_R;
+      float out_L, out_R;
+      double inputAmplification = 1.0;
 
-      plateVerb.process(leftInput * minus18dBGain * minus20dBGain * (1.0 + 0.5 * 7.) * clearPopCancelValue,
-                        rightInput * minus18dBGain * minus20dBGain * (1.0 + 0.5 * 7.) * clearPopCancelValue);
-
-      plateWet = p_verb_amt.Process();;
+      plateWet = p_verb_amt.Process();
       plateDry = 1.0 - plateWet;
-      out_L = ((leftInput * plateDry * 0.1) + (plateVerb.getLeftOutput() * plateWet * clearPopCancelValue));
-      out_R = ((rightInput * plateDry * 0.1) + (plateVerb.getRightOutput() * plateWet * clearPopCancelValue));
-      s_L = s_L * out_L;
-      s_R = s_R * out_R;
-      // s = (s * ((out_l + out_r) / 2.));
+
+      // Dattorro Plate Reverb was written to process values between -10 and 10
+      // so first convert to that.
+      float send_L = hardLimit100_(s_L) * 10.0f;
+      float send_R = hardLimit100_(s_R) * 10.0f;
+
+      plateVerb.process((double)send_L * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue,
+                    (double)send_R * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue);
+
+      out_L = (float)plateVerb.getLeftOutput();
+      out_R = (float)plateVerb.getRightOutput();
+
+      s_L = (s_L * plateDry) + (out_L * plateWet * clearPopCancelValue);
+      s_R = (s_R * plateDry) + (out_R * plateWet * clearPopCancelValue);
     }
 
     out[0][i] = s_L;
@@ -331,8 +344,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
 int main() {
   hw.Init();
-  hw.SetAudioBlockSize(48);  // Number of samples handled per callback
-  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
+  // hw.SetAudioBlockSize(48);  // Number of samples handled per callback
+  // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
+  hw.SetAudioBlockSize(32);  // Number of samples handled per callback
+  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
 
   // Initialize LEDs
   led_verb.Init(hw.seed.GetPin(Hothouse::LED_1), false);
@@ -352,20 +367,19 @@ int main() {
   trem.SetWaveform(Oscillator::WAVE_SIN); // Only sine wave supported
 
   // Plate Reverb Defaults
-  // plateVerb.setSampleRate(hw.AudioSampleRate());
-  plateVerb.setSampleRate(16000);
-  plateVerb.setTimeScale(plateTimeScale);
-  plateVerb.setPreDelay(platePreDelay);
-  plateVerb.setInputFilterLowCutoffPitch(10. * plateInputDampLow);
-  plateVerb.setInputFilterHighCutoffPitch(10. - (10. * plateInputDampHigh));
-  plateVerb.enableInputDiffusion(plateDiffusionEnabled);
-  plateVerb.setDecay(plateDecay);
-  plateVerb.setTankDiffusion(plateDiffusion * 0.7);
-  plateVerb.setTankFilterLowCutFrequency(10. * plateDampLow);
-  plateVerb.setTankFilterHighCutFrequency(10. - (10. * plateDampHigh));
-  plateVerb.setTankModSpeed(1.0);
-  plateVerb.setTankModDepth(0.5);
-  plateVerb.setTankModShape(0.5);
+  // plateVerb.setSampleRate(32000);
+  // plateVerb.setTimeScale(plateTimeScale);
+  // plateVerb.setPreDelay(platePreDelay);
+  // plateVerb.setInputFilterLowCutoffPitch(0.0);
+  // plateVerb.setInputFilterHighCutoffPitch(10000.0);
+  // plateVerb.enableInputDiffusion(plateDiffusionEnabled);
+  // plateVerb.setDecay(plateDecay);
+  // plateVerb.setTankDiffusion(plateDiffusion * 0.7);
+  // plateVerb.setTankFilterLowCutFrequency(0);
+  // plateVerb.setTankFilterHighCutFrequency(10000);
+  // plateVerb.setTankModSpeed(1.0);
+  // plateVerb.setTankModDepth(0.8);
+  // plateVerb.setTankModShape(0.5);
 
   verb.Init(hw.AudioSampleRate());
   verb.SetFeedback(0.87);
