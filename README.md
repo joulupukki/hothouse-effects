@@ -18,6 +18,11 @@ on some Fender amps. It's nice and smooth just like you'd expect.
 
 **Delay:** Standard Daisy Seed digital delay.
 
+### Demo
+
+Here's an early alpha version of how it's working (27 December 2024):
+[![Demo Video](https://img.youtube.com/vi/-sD-U93r3Rw/0.jpg)](https://youtu.be/-sD-U93r3Rw)
+
 ### Controls
 
 | CONTROL | DESCRIPTION | NOTES |
