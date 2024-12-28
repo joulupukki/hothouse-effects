@@ -5,7 +5,7 @@ TARGET = flick
 USE_DAISYSP_LGPL=1
 
 # Sources and Hothouse header files
-CPP_SOURCES = flick.cpp reverbsploodge.cpp ../hothouse.cpp
+CPP_SOURCES = flick.cpp reverbsploodge.cpp ../../HothouseExamples/src/hothouse.cpp
 C_INCLUDES = -I..
 
 # Library Locations
@@ -17,4 +17,4 @@ SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
 
 # Global helpers
-include ../Makefile
+# include ../Makefile

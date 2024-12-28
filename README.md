@@ -41,13 +41,40 @@ Here's an early alpha version of how it's working (27 December 2024):
 
 ### Installation
 
-First clone the HothouseExamples project (https://github.com/clevelandmusicco/HothouseExamples/tree/main). Follow all the instructions found there to get the examples building and installing.
+Create a `daisy-seed/` directory on your computer.
+```
+mkdir daisy-seed
+```
 
-Once you have the Hothouse Example effects building and installing, copy the `Flick/` directory form this repo into the `HothouseExamples/src/` directory. Then, go into that directory:
+Inside of the `daisy-seed/` directory, clone this project:
+```
+git clone https://github.com/joulupukki/hothouse-effects.git
+```
 
-1. Run `make`
-2. Put your Hothouse into DFU mode
-3. Run `make program-dfu`
+Download the submodules (third-party code that this project depends on): libDaisy and DaisySP.
+```
+cd hothouse-effects
+git submodule update --init --recursive
+```
+
+Build libDaisy and DaisySP (this may take a while):
+```
+make -C libDaisy
+make -C DaisySP
+```
+
+Once that is done, you should be able to go into the `src/Flick/` directory and build the effect:
+```
+cd src/Flick/
+make
+```
+
+To install the effect onto the Hothouse pedal, put your Hothouse into DFU mode and run:
+```
+make program-dfu
+```
+
+**Note:** With any of the Hothouse Example effects installed or the Flick installed onto your Hothouse, you can put the Hothouse into DFU mode by pressing and holding the left footswitch button for 3 seconds. Keep pressing it until the LED lights flash alternatively.
 
 ### License
 
