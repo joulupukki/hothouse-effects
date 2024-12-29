@@ -41,7 +41,6 @@ FOOTSWITCH 1  Input Diffusion On/Off
 FOOTSWITCH 2	Reverb On/Off
  */
 
-#include "daisysp-lgpl.h"
 #include "daisysp.h"
 #include "hothouse.h"
 #include "Dattorro.hpp"
