@@ -1,11 +1,11 @@
 # Project Name
-TARGET = flick
+TARGET = plate_reverb
 
 # Uncomment to use LGPL (like ReverbSc, etc.)
 USE_DAISYSP_LGPL=1
 
 # Sources and Hothouse header files
-CPP_SOURCES = flick.cpp reverbsploodge.cpp ../hothouse.cpp
+CPP_SOURCES = plate_reverb.cpp ../hothouse.cpp
 
 # Add PlateauNEVersio sources
 CPP_SOURCES += ../../PlateauNEVersio/utilities/Utilities.cpp
