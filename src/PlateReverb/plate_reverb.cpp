@@ -163,35 +163,42 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   static const double tank_mod_shape_values[] = {0.75f, 0.5f, 0.25f};
   plateTankModShape = tank_mod_shape_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
-  verb.setPreDelay(platePreDelay);
-  verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
-  verb.setTankFilterHighCutFrequency(plateDampHigh);
-  verb.setTankModSpeed(plateTankModSpeed);
-  verb.setTankModDepth(plateTankModDepth);
-  verb.enableInputDiffusion(plateDiffusionEnabled);
-  verb.setTankDiffusion(plateTankDiffusion);
-  verb.setTankModShape(plateTankModShape);
+  if (!bypass_verb) {
+    verb.setPreDelay(platePreDelay);
+    verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
+    verb.setTankFilterHighCutFrequency(plateDampHigh);
+    verb.setTankModSpeed(plateTankModSpeed);
+    verb.setTankModDepth(plateTankModDepth);
+    verb.enableInputDiffusion(plateDiffusionEnabled);
+    verb.setTankDiffusion(plateTankDiffusion);
+    verb.setTankModShape(plateTankModShape);
 
-  for (size_t i = 0; i < size; ++i) {
-    // Dattorro seems to want to have values between -10 and 10 so times by 10
-    leftInput = hardLimit100_(in[0][i]) * 10.;
-    rightInput = hardLimit100_(in[1][i]) * 10.;
+    for (size_t i = 0; i < size; ++i) {
+      // Dattorro seems to want to have values between -10 and 10 so times by 10
+      leftInput = hardLimit100_(in[0][i]) * 10.;
+      rightInput = hardLimit100_(in[1][i]) * 10.;
 
-    verb.process(leftInput * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue,
-                  rightInput * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue);
+      verb.process(leftInput * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue,
+                    rightInput * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue);
 
-    leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
-    rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
+      leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
+      rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
 
-    // gainControl(leftOutput, rightOutput);
+      // gainControl(leftOutput, rightOutput);
 
-    out[0][i] = leftOutput;
-    out[1][i] = rightOutput;
+      out[0][i] = leftOutput;
+      out[1][i] = rightOutput;
+    }
+  } else {
+    for (size_t i = 0; i < size; ++i) {
+      out[0][i] = in[0][i];
+      out[1][i] = in[1][i];
+    }
   }
 }
 
 int main() {
-  hw.Init();
+  hw.Init(true);
   // hw.SetAudioBlockSize(48);  // Number of samples handled per callback
   // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
   hw.SetAudioBlockSize(32);  // Number of samples handled per callback
@@ -204,7 +211,7 @@ int main() {
   // Initialize Potentiometers
   p_verb_dry.Init(hw.knobs[Hothouse::KNOB_1], 0.0f, 1.0f, Parameter::LINEAR);
   p_verb_wet.Init(hw.knobs[Hothouse::KNOB_2], 0.0f, 1.0f, Parameter::LINEAR);
-  p_verb_pre_delay.Init(hw.knobs[Hothouse::KNOB_3], 0.0f, 1.0f, Parameter::LINEAR);
+  p_verb_pre_delay.Init(hw.knobs[Hothouse::KNOB_3], 0.0f, 192010.0f, Parameter::LINEAR);
   p_verb_high_cut_freq.Init(hw.knobs[Hothouse::KNOB_4], 0.25f, 1.0f, Parameter::LINEAR);
   p_verb_mod_speed.Init(hw.knobs[Hothouse::KNOB_5], 0.0f, 1.0f, Parameter::LINEAR);
   p_verb_mod_depth.Init(hw.knobs[Hothouse::KNOB_6], 0.0f, 1.0f, Parameter::LINEAR);
