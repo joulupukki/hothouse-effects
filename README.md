@@ -5,6 +5,7 @@ This is my own personal collection of effects built for the [Hothouse DSP Pedal]
 ### Effects
 
 [Flick](src/Flick/): A reverb, tremolo, and delay pedal in one.
+
 [Plate Reverb](src/PlateReverb/): A reverb based on the Dattorro reverb.
 
 ### Installation
