@@ -1,5 +1,5 @@
 # Project Name
-TARGET = plate_reverb
+TARGET = platerra
 
 # Uncomment to use LGPL (like ReverbSc, etc.)
 #USE_DAISYSP_LGPL=1
@@ -7,7 +7,7 @@ TARGET = plate_reverb
 #DEBUG=1
 
 # Sources and Hothouse header files
-CPP_SOURCES = plate_reverb.cpp ../hothouse.cpp
+CPP_SOURCES = platerra.cpp ../hothouse.cpp
 
 # Add PlateauNEVersio sources
 CPP_SOURCES += ../../PlateauNEVersio/utilities/Utilities.cpp

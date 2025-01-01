@@ -1,4 +1,4 @@
-# Plate Reverb
+# Platerra
 
 This is an implementation of the Dattorro plate reverb adapted from the work originally done for the [Campestria Versio](https://github.com/digitalartifactmusic/PlateauNEVersio) reverb which was originally written by Dale Johnson for [VCV Rack](https://github.com/ValleyAudio/ValleyRackFree/tree/main/src/Plateau).
 
@@ -46,9 +46,9 @@ make -C libDaisy
 make -C DaisySP
 ```
 
-Once that is done, you should be able to go into the `src/PlateReverb/` directory and build the effect:
+Once that is done, you should be able to go into the `src/Platerra/` directory and build the effect:
 ```
-cd src/PlateReverb/
+cd src/Platerra/
 make
 ```
 
@@ -57,7 +57,7 @@ To install the effect onto the Hothouse pedal, put your Hothouse into DFU mode a
 make program-dfu
 ```
 
-**Note:** With any of the Hothouse Example effects installed or the PlateReverb installed onto your Hothouse, you can put the Hothouse into DFU mode by pressing and holding the left footswitch button for 3 seconds. Keep pressing it until the LED lights flash alternatively.
+**Note:** With any of the Hothouse Example effects installed or the Platerra installed onto your Hothouse, you can put the Hothouse into DFU mode by pressing and holding the left footswitch button for 3 seconds. Keep pressing it until the LED lights flash alternatively.
 
 ### Dattorro Paper
 

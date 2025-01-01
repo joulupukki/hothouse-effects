@@ -1,5 +1,5 @@
 /*
- * PlateReverb for Hothouse DSP Platform
+ * Platerra for Hothouse DSP Platform
  *
  * Copyright (c) 2024 Boyd Timothy. All rights reserved.
  *
@@ -210,7 +210,7 @@ int main() {
   // InterpDelay.cpp file.
   hold = 1.;
 
-  // Plate Reverb Defaults
+  // Reverb Defaults
   verb.setSampleRate(48000);
   // verb.setSampleRate(32000);
   verb.setTimeScale(plateTimeScale);

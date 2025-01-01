@@ -6,7 +6,7 @@ This is my own personal collection of effects built for the [Hothouse DSP Pedal]
 
 [Flick](src/Flick/): A reverb, tremolo, and delay pedal in one.
 
-[Plate Reverb](src/PlateReverb/): A reverb based on the Dattorro reverb.
+[Platerra](src/Platerra/): A reverb based on the Dattorro reverb.
 
 ### Installation
 
@@ -39,7 +39,7 @@ To install the effect onto the Hothouse pedal, put your Hothouse into DFU mode a
 make program-dfu
 ```
 
-**Note:** With any of the Hothouse Example effects installed or the PlateReverb installed onto your Hothouse, you can put the Hothouse into DFU mode by pressing and holding the left footswitch button for 3 seconds. Keep pressing it until the LED lights flash alternatively.
+**Note:** With any of the Hothouse Example effects installed or the Platerra installed onto your Hothouse, you can put the Hothouse into DFU mode by pressing and holding the left footswitch button for 3 seconds. Keep pressing it until the LED lights flash alternatively.
 
 ### License
 
