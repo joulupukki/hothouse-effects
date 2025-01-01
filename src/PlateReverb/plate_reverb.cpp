@@ -19,28 +19,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
-CONTROL       DESCRIPTION         NOTES
-KNOB 1	      Reverb Dry Amount	
-KNOB 2	      Reverb Wet Amount
-KNOB 3	      Pre Delay Time
-KNOB 4	      Input & Tank High Cut Frequency
-KNOB 5	      Tank Mod Speed
-KNOB 6	      Tank Mod Depth
-SWITCH 1	    Input Diffusion       UP      - High
-                                    MIDDLE  - Med
-                                    DOWN    - Off
-SWITCH 2	    Tank Diffusion        UP      - High
-                                    MIDDLE  - Med
-                                    DOWN    - Off
-SWITCH 3	    Tank Mod Shape
-                                    UP      - High
-                                    MIDDLE  - Med
-                                    DOWN    - Low
-FOOTSWITCH 1  Input Diffusion On/Off
-FOOTSWITCH 2	Reverb On/Off
- */
-
 #include "daisysp.h"
 #include "hothouse.h"
 #include "Dattorro.hpp"
@@ -51,45 +29,47 @@ using daisy::Led;
 using daisy::Parameter;
 using daisy::SaiHandle;
 using daisy::System;
-using daisysp::DelayLine;
-using daisysp::fonepole;
 
 Hothouse hw;
 
-// #define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
-#define MAX_DELAY static_cast<size_t>(32000 * 2.0f) // 4 second max delay
+// Dattorro verb(32000, 16, 4.0);
+Dattorro verb(48000, 16, 4.0);
 
-Dattorro verb(32000, 16, 4.0);
 bool plateDiffusionEnabled = true;
 double platePreDelay = 0.;
-double previousPreDelay = 0.;
 
+double plateDelay = 0.0;
+
+float plateDry = 1.0;
 float plateWet = 0.5;
-float plateDry = 0.5;
 
-double plateDecay = 0.877465;
+double plateDecay = 0.67;
 double plateTimeScale = 1.007500;
 
-double plateDiffusion = 0.75;
-double plateTempDiffusion = 0.625;
+double plateTankDiffusion = 0.7;
 
-double plateTankDiffusion = 0.75;
+  /**
+   * Good Defaults
+   * Lo Pitch: .287 (2.87) = 100Hz: 440 * (2^(2.87-5))
+   * InputFilterHighCutoffPitch: 0.77 (7.77) is approx 3000Hz
+   * TankFilterHighCutFrequency: 0.8 (8.0) is 3520Hz
+   * 0.9507 is approx 10kHz
+   * 
+   * mod speed: 0.5
+   * mod depth: 0.5
+   * mod shape: 0.75
+   */
+
+// The damping values appear to be want to be between 0 and 10
+double plateInputDampLow = 2.87; // approx 100Hz
+double plateInputDampHigh = 7.77; // approx 3kHz
+
+double plateTankDampLow = 2.87; // approx 100Hz
+double plateTankDampHigh = 8.; // 3.52kHz
+
+double plateTankModSpeed = 0.5;
+double plateTankModDepth = 0.5;
 double plateTankModShape = 0.75;
-
-double plateInputDampLow = 0.;
-double plateInputDampHigh = 10000.;
-
-double plateDampLow = 0.0;
-double plateDampHigh = 10000.;
-
-double platePreviousInputDampLow = 0.;
-double platePreviousInputDampHigh = 0.;
-
-double platePreviousReverbDampLow = 0.;
-double platePreviousReverbDampHigh = 0.;
-
-double plateTankModSpeed = 1.0;
-double plateTankModDepth = 1.0;
 
 const double minus18dBGain = 0.12589254;
 const double minus20dBGain = 0.1;
@@ -101,16 +81,18 @@ double rightOutput = 0.;
 
 double inputAmplification = 1.0;
 
-Parameter p_verb_dry, 
-  p_verb_wet, 
-  p_verb_pre_delay, 
-  p_verb_high_cut_freq, 
-  p_verb_mod_speed, 
-  p_verb_mod_depth;
+Parameter p_knob_1, p_knob_2, p_knob_3, p_knob_4, p_knob_5, p_knob_6;
+
+// Parameter p_verb_dry, 
+//   p_verb_wet, 
+//   p_verb_delay, 
+//   p_verb_high_cut_freq, 
+//   p_verb_mod_speed, 
+//   p_verb_mod_depth;
 
 // Bypass vars
-Led led_diffusion, led_verb;
-bool bypass_diffusion = true;
+Led led_100p_wet, led_verb;
+bool bypass_100p_wet = true;
 bool bypass_verb = true;
 
 inline float hardLimit100_(const float &x) {
@@ -125,10 +107,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   // Set the state of the LEDs
   //
   if (hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge()) {
-    bypass_diffusion = !bypass_diffusion;
-    led_diffusion.Set(bypass_diffusion ? 0.0f : 1.0f);
+    bypass_100p_wet = !bypass_100p_wet;
+    led_100p_wet.Set(bypass_100p_wet ? 0.0f : 1.0f);
   }
-  led_diffusion.Update();
+  led_100p_wet.Update();
 
   if (hw.switches[Hothouse::FOOTSWITCH_2].RisingEdge()) {
     bypass_verb = !bypass_verb;
@@ -139,39 +121,43 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   //
   // Read in all of the potentiometer values
   //
-  plateDry = p_verb_dry.Process();
-  plateWet = p_verb_wet.Process();
-  platePreDelay = (double)p_verb_pre_delay.Process();
-  plateInputDampHigh = plateDampHigh = (double)p_verb_high_cut_freq.Process() * 20000.0f;
-  plateTankModSpeed = (double)p_verb_mod_speed.Process();
-  plateTankModDepth = (double)p_verb_mod_depth.Process();
+  if (bypass_100p_wet) {
+    plateDry = p_knob_1.Process();
+    plateWet = p_knob_2.Process();    
+  } else {
+    plateDry = 0.0;
+    plateWet = 1.0;
+  }
+  plateDecay = p_knob_3.Process();
+  plateTankDiffusion = p_knob_4.Process();
+  plateInputDampHigh = p_knob_5.Process() * 10.0; // Dattorro takes values for this between 0 and 10
+  plateTankDampHigh = p_knob_6.Process() * 10.0; // Dattorro takes values for this between 0 and 10
 
   //
   // Read in all of the toggle switch values
   //
 
-  // Switch 1 - Input Diffusion
-  static const double input_diffusion_values[] = {0.75f, 0.625f, 0.0f};
-  plateDiffusion = input_diffusion_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
-  plateDiffusionEnabled = plateDiffusion > 0.0;
+  // Switch 1 - Tank Mod Speed
+  static const double tank_mod_speed_values[] = {1.0f, 0.5f, 0.0f};
+  plateTankModSpeed = tank_mod_speed_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
 
-  // Switch 2 - Tank Diffusion
-  static const double tank_diffusion_values[] = {0.75f, 0.625f, 0.0f};
-  plateTankDiffusion = tank_diffusion_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
+  // Switch 2 - Tank Mod Depth
+  static const double tank_mod_depth_values[] = {1.0f, 0.5f, 0.0f};
+  plateTankModDepth = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
 
-  // Switch 3 - Tank Mod Shape
-  static const double tank_mod_shape_values[] = {0.75f, 0.5f, 0.25f};
-  plateTankModShape = tank_mod_shape_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
+  // Switch 3 - Pre Delay
+  static const double pre_delay_values[] = {0.1f, 0.05f, 0.0f};
+  platePreDelay = pre_delay_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
   if (!bypass_verb) {
-    verb.setPreDelay(platePreDelay);
+    verb.setDecay(plateDecay);
+    verb.setTankDiffusion(plateTankDiffusion);
     verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
-    verb.setTankFilterHighCutFrequency(plateDampHigh);
+    verb.setTankFilterHighCutFrequency(plateTankDampHigh);
+
     verb.setTankModSpeed(plateTankModSpeed);
     verb.setTankModDepth(plateTankModDepth);
-    verb.enableInputDiffusion(plateDiffusionEnabled);
-    verb.setTankDiffusion(plateTankDiffusion);
-    verb.setTankModShape(plateTankModShape);
+    verb.setPreDelay(platePreDelay);    
 
     for (size_t i = 0; i < size; ++i) {
       // Dattorro seems to want to have values between -10 and 10 so times by 10
@@ -184,10 +170,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
       rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
 
-      // gainControl(leftOutput, rightOutput);
-
-      out[0][i] = leftOutput;
-      out[1][i] = rightOutput;
+      out[0][i] = (float)leftOutput;
+      out[1][i] = (float)rightOutput;
     }
   } else {
     for (size_t i = 0; i < size; ++i) {
@@ -199,37 +183,44 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
 int main() {
   hw.Init(true);
-  // hw.SetAudioBlockSize(48);  // Number of samples handled per callback
-  // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
-  hw.SetAudioBlockSize(32);  // Number of samples handled per callback
-  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
+  hw.SetAudioBlockSize(48);  // Number of samples handled per callback
+  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
+  // hw.SetAudioBlockSize(32);  // Number of samples handled per callback
+  // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
 
   // Initialize LEDs
-  led_diffusion.Init(hw.seed.GetPin(Hothouse::LED_1), false);
+  led_100p_wet.Init(hw.seed.GetPin(Hothouse::LED_1), false);
   led_verb.Init(hw.seed.GetPin(Hothouse::LED_2), false);
 
-  // Initialize Potentiometers
-  p_verb_dry.Init(hw.knobs[Hothouse::KNOB_1], 0.0f, 1.0f, Parameter::LINEAR);
-  p_verb_wet.Init(hw.knobs[Hothouse::KNOB_2], 0.0f, 1.0f, Parameter::LINEAR);
-  p_verb_pre_delay.Init(hw.knobs[Hothouse::KNOB_3], 0.0f, 192010.0f, Parameter::LINEAR);
-  p_verb_high_cut_freq.Init(hw.knobs[Hothouse::KNOB_4], 0.25f, 1.0f, Parameter::LINEAR);
-  p_verb_mod_speed.Init(hw.knobs[Hothouse::KNOB_5], 0.0f, 1.0f, Parameter::LINEAR);
-  p_verb_mod_depth.Init(hw.knobs[Hothouse::KNOB_6], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_1.Init(hw.knobs[Hothouse::KNOB_1], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_2.Init(hw.knobs[Hothouse::KNOB_2], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_3.Init(hw.knobs[Hothouse::KNOB_3], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_4.Init(hw.knobs[Hothouse::KNOB_4], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_5.Init(hw.knobs[Hothouse::KNOB_5], 0.0f, 1.0f, Parameter::LINEAR);
+  p_knob_6.Init(hw.knobs[Hothouse::KNOB_6], 0.0f, 1.0f, Parameter::LINEAR);
+
+  // Zero out the InterpDelay buffers used by the plate reverb
+  for(int i = 0; i < 50; i++) {
+      for(int j = 0; j < 144000; j++) {
+          sdramData[i][j] = 0.;
+      }
+  }
 
   // Plate Reverb Defaults
-  verb.setSampleRate(32000);
+  verb.setSampleRate(48000);
+  // verb.setSampleRate(32000);
   verb.setTimeScale(plateTimeScale);
   verb.setPreDelay(platePreDelay);
   verb.setInputFilterLowCutoffPitch(0.0);
   verb.setInputFilterHighCutoffPitch(10000.0);
   verb.enableInputDiffusion(plateDiffusionEnabled);
   verb.setDecay(plateDecay);
-  verb.setTankDiffusion(plateDiffusion * 0.7);
+  verb.setTankDiffusion(plateTankDiffusion);
   verb.setTankFilterLowCutFrequency(0);
   verb.setTankFilterHighCutFrequency(10000);
-  verb.setTankModSpeed(1.0);
-  verb.setTankModDepth(0.8);
-  verb.setTankModShape(0.5);
+  verb.setTankModSpeed(plateTankModSpeed);
+  verb.setTankModDepth(plateTankModDepth);
+  verb.setTankModShape(plateTankModShape);
 
   hw.StartAdc();
   hw.StartAudio(AudioCallback);

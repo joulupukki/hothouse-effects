@@ -4,6 +4,8 @@ TARGET = plate_reverb
 # Uncomment to use LGPL (like ReverbSc, etc.)
 #USE_DAISYSP_LGPL=1
 
+#DEBUG=1
+
 # Sources and Hothouse header files
 CPP_SOURCES = plate_reverb.cpp ../hothouse.cpp
 
