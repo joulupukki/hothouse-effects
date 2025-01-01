@@ -206,6 +206,10 @@ int main() {
       }
   }
 
+  // Set this to 1.0 or plate reverb won't work. This is defined in Dattorro's
+  // InterpDelay.cpp file.
+  hold = 1.;
+
   // Plate Reverb Defaults
   verb.setSampleRate(48000);
   // verb.setSampleRate(32000);

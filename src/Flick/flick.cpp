@@ -51,7 +51,6 @@ FOOTSWITCH 2	Delay/Tremolo On/Off  Normal press toggles delay.
 #include "daisysp.h"
 #include "hothouse.h"
 #include "reverbsploodge.h"
-#include "Dattorro.hpp"
 
 using clevelandmusicco::Hothouse;
 using daisy::AudioHandle;
@@ -67,38 +66,7 @@ using daisysp::Tremolo;
 
 Hothouse hw;
 
-// #define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
-#define MAX_DELAY static_cast<size_t>(32000 * 2.0f) // 4 second max delay
-
-Dattorro plateVerb(32000, 16, 4.0);
-bool plateDiffusionEnabled = true;
-double platePreDelay = 0.;
-double previousPreDelay = 0.;
-
-float plateWet = 0.5;
-float plateDry = 0.5;
-
-double plateDecay = 0.877465;
-// double plateTimeScale = 1.007500;
-double plateTimeScale = 0.75;
-
-double plateDiffusion = 0.75;
-double plateTempDiffusion = 0.625;
-
-double plateInputDampLow = 0.;
-double plateInputDampHigh = 10000.;
-
-double plateDampLow = 0.0;
-double plateDampHigh = 10000.;
-
-double platePreviousInputDampLow = 0.;
-double platePreviousInputDampHigh = 0.;
-
-double platePreviousReverbDampLow = 0.;
-double platePreviousReverbDampHigh = 0.;
-
-const double minus18dBGain = 0.12589254;
-const double minus20dBGain = 0.1;
+#define MAX_DELAY static_cast<size_t>(48000 * 2.0f) // 4 second max delay
 
 ReverbSploodge verb;
 Tremolo trem;
@@ -211,14 +179,10 @@ void check_footswitch2_state(bool is_pressed) {
   footswitch2_last_state = is_pressed;
 }
 
-inline float hardLimit100_(const float &x) {
-    return (x > 1.) ? 1. : ((x < -1.) ? -1. : x);
-}
-
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
                    size_t size) {
   static float trem_val;
-  // float verb_amt;
+  float verb_amt;
   hw.ProcessAllControls();
 
   if (hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge()) {
@@ -268,7 +232,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   for (size_t i = 0; i < size; ++i) {
     float dry_L = in[0][i];
     float dry_R = in[1][i];
-    // float dry = in[0][i]; // Get the incoming signal value (mono)
     float s_L, s_R;
     s_L = dry_L;
     s_R = dry_R;
@@ -298,31 +261,14 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       // s = s * trem_val;
     }
     if (!bypass_verb) {
-      // float out_l, out_r;
-      // verb.Process(s_L, s_R, &out_l, &out_r);
-      // float verb_amt = p_verb_amt.Process();
-      // s_L = (s_L * (1.0f - verb_amt) + verb_amt * out_l);
-      // s_R = (s_R * (1.0f - verb_amt) + verb_amt * out_r);
-
       float out_L, out_R;
-      double inputAmplification = 1.0;
+      verb.Process(s_L, s_R, &out_L, &out_R);
+      verb_amt = p_verb_amt.Process();
+      s_L = (s_L * (1.0f - verb_amt) + verb_amt * out_L);
+      s_R = (s_R * (1.0f - verb_amt) + verb_amt * out_R);
 
-      plateWet = p_verb_amt.Process();
-      plateDry = 1.0 - plateWet;
-
-      // Dattorro Plate Reverb was written to process values between -10 and 10
-      // so first convert to that.
-      float send_L = hardLimit100_(s_L) * 10.0f;
-      float send_R = hardLimit100_(s_R) * 10.0f;
-
-      plateVerb.process((double)send_L * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue,
-                    (double)send_R * minus18dBGain * minus20dBGain * (1.0 + inputAmplification * 7.) * clearPopCancelValue);
-
-      out_L = (float)plateVerb.getLeftOutput();
-      out_R = (float)plateVerb.getRightOutput();
-
-      s_L = (s_L * plateDry) + (out_L * plateWet * clearPopCancelValue);
-      s_R = (s_R * plateDry) + (out_R * plateWet * clearPopCancelValue);
+      // s_L = (s_L * plateDry) + (out_L * plateWet * clearPopCancelValue);
+      // s_R = (s_R * plateDry) + (out_R * plateWet * clearPopCancelValue);
     }
 
     out[0][i] = s_L;
@@ -365,21 +311,6 @@ int main() {
 
   trem.Init(hw.AudioSampleRate());
   trem.SetWaveform(Oscillator::WAVE_SIN); // Only sine wave supported
-
-  // Plate Reverb Defaults
-  // plateVerb.setSampleRate(32000);
-  // plateVerb.setTimeScale(plateTimeScale);
-  // plateVerb.setPreDelay(platePreDelay);
-  // plateVerb.setInputFilterLowCutoffPitch(0.0);
-  // plateVerb.setInputFilterHighCutoffPitch(10000.0);
-  // plateVerb.enableInputDiffusion(plateDiffusionEnabled);
-  // plateVerb.setDecay(plateDecay);
-  // plateVerb.setTankDiffusion(plateDiffusion * 0.7);
-  // plateVerb.setTankFilterLowCutFrequency(0);
-  // plateVerb.setTankFilterHighCutFrequency(10000);
-  // plateVerb.setTankModSpeed(1.0);
-  // plateVerb.setTankModDepth(0.8);
-  // plateVerb.setTankModShape(0.5);
 
   verb.Init(hw.AudioSampleRate());
   verb.SetFeedback(0.87);
