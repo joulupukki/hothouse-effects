@@ -1,6 +1,6 @@
 # Platerra
 
-This is an implementation of the Dattorro plate reverb adapted from the work originally done for the [Campestria Versio](https://github.com/digitalartifactmusic/PlateauNEVersio) reverb which was originally written by Dale Johnson for [VCV Rack](https://github.com/ValleyAudio/ValleyRackFree/tree/main/src/Plateau).
+This is an implementation of a plate reverb and uses the Dattorro class from the [Campestria Versio](https://github.com/digitalartifactmusic/PlateauNEVersio) project. The Campestria was ported from the Plateau reverb, written for [VCV Rack](https://github.com/ValleyAudio/ValleyRackFree/tree/main/src/Plateau) by Dale Johnson.
 
 ### Demo
 
