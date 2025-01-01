@@ -62,12 +62,12 @@ double plateTankDiffusion = 0.7;
 
 // The damping values appear to be want to be between 0 and 10
 double plateInputDampLow = 2.87; // approx 100Hz
-double plateInputDampHigh = 7.77; // approx 3kHz
+double plateInputDampHigh = 6.77; // approx 1.5kHz
 
 double plateTankDampLow = 2.87; // approx 100Hz
-double plateTankDampHigh = 8.; // 3.52kHz
+double plateTankDampHigh = 6.77; // approx 1.5kHz
 
-double plateTankModSpeed = 0.5;
+double plateTankModSpeed = 1.0;
 double plateTankModDepth = 0.5;
 double plateTankModShape = 0.75;
 
