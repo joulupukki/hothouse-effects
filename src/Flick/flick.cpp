@@ -290,11 +290,9 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
 int main() {
   hw.Init();
-  // hw.SetAudioBlockSize(48);  // Number of samples handled per callback
-  // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
-  hw.SetAudioBlockSize(32);  // Number of samples handled per callback
-  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
-
+  hw.SetAudioBlockSize(48);  // Number of samples handled per callback
+  hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
+  
   // Initialize LEDs
   led_verb.Init(hw.seed.GetPin(Hothouse::LED_1), false);
   led_trem.Init(hw.seed.GetPin(Hothouse::LED_2), false);
