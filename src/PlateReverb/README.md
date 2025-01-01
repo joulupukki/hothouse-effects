@@ -1,16 +1,10 @@
 # Plate Reverb
 
-Contributed by Boyd Timothy \<btimothy@gmail.com>\>.
-
-## Description
-
-This is an implementation of the Dattorro plate reverb adapted from the work originally done by the Campestria Versio reverb available here: https://github.com/digitalartifactmusic/PlateauNEVersio
+This is an implementation of the Dattorro plate reverb adapted from the work originally done for the [Campestria Versio](https://github.com/digitalartifactmusic/PlateauNEVersio) reverb which was originally written by Dale Johnson for [VCV Rack](https://github.com/ValleyAudio/ValleyRackFree/tree/main/src/Plateau).
 
 ### Demo
 
 TODO: Build a demo video and show it here.
-
-[![Demo Video](https://img.youtube.com/vi/-sD-U93r3Rw/0.jpg)](https://youtu.be/-sD-U93r3Rw)
 
 ### Controls
 
@@ -67,7 +61,7 @@ make program-dfu
 
 ### Dattorro Paper
 
-https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf
+Lots of good information about the algorithm is available [here](https://ccrma.stanford.edu/~dattorro/EffectDesignPart1.pdf) (PDF).
 
 ### License
 
