@@ -70,7 +70,8 @@ Hothouse hw;
 
 ReverbSploodge verb;
 Tremolo trem;
-DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMem;
+DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemL;
+DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemR;
 Parameter p_verb_amt;
 Parameter p_trem_speed, p_trem_depth;
 Parameter p_delay_time, p_delay_feedback, p_delay_amt;
@@ -93,7 +94,8 @@ struct Delay {
   }
 };
 
-Delay delay;
+Delay delayL;
+Delay delayR;
 int delay_drywet;
 
 float reverb_tone;
@@ -223,40 +225,56 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   //
   // Delay
   //
-  delay.delayTarget = p_delay_time.Process();
-  delay.feedback = p_delay_feedback.Process();
+  delayL.delayTarget = delayR.delayTarget =  p_delay_time.Process();
+  delayL.feedback = delayR.feedback = p_delay_feedback.Process();
   delay_drywet = (int)p_delay_amt.Process();
 
   for (size_t i = 0; i < size; ++i) {
-    float dry = in[0][i]; // Get the incoming signal value (mono)
-    float s, out_l, out_r;
-    s = dry;
+    float dry_L = in[0][i];
+    float dry_R = in[1][i];
+    float s_L, s_R;
+    s_L = dry_L;
+    s_R = dry_R;
 
     if (!bypass_delay) {
-      float mix = 0;
+      float mixL = 0;
+      float mixR = 0;
       float fdrywet = (float)delay_drywet / 100.0f;
 
       // update delayline with feedback
-      float sig = delay.Process(s);
-      mix += sig;
+      float sigL = delayL.Process(s_L);
+      float sigR = delayR.Process(s_R);
+      mixL += sigL;
+      mixR += sigR;
 
       // apply drywet and attenuate
-      s = fdrywet * mix * 0.333f + (1.0f - fdrywet) * s;
+      s_L = fdrywet * mixL * 0.333f + (1.0f - fdrywet) * s_L;
+      s_R = fdrywet * mixR * 0.333f + (1.0f - fdrywet) * s_R;
+      // s = fdrywet * mix * 0.333f + (1.0f - fdrywet) * s;
     }
 
     if (!bypass_trem) {
       // trem_val gets used above for pulsing LED
       trem_val = trem.Process(1.f);
-      s = s * trem_val;
+      s_L = s_L * trem_val;
+      s_R = s_R * trem_val;
+      // s = s * trem_val;
     }
     if (!bypass_verb) {
-      verb.Process(s, s, &out_l, &out_r);
+      float out_L, out_R;
+      verb.Process(s_L, s_R, &out_L, &out_R);
       verb_amt = p_verb_amt.Process();
-      s = (s * (1.0f - verb_amt) + verb_amt * ((out_l + out_r) / 2.0f));
+      s_L = (s_L * (1.0f - verb_amt) + verb_amt * out_L);
+      s_R = (s_R * (1.0f - verb_amt) + verb_amt * out_R);
+
+      // s_L = (s_L * plateDry) + (out_L * plateWet * clearPopCancelValue);
+      // s_R = (s_R * plateDry) + (out_R * plateWet * clearPopCancelValue);
     }
 
+    out[0][i] = s_L;
+    out[1][i] = s_R;
     // Quick and dirty dual-mono
-    out[0][i] = out[1][i] = s;
+    // out[0][i] = out[1][i] = s;
   }
 
   // for (size_t i = 0; i < size; ++i) {
@@ -274,7 +292,7 @@ int main() {
   hw.Init();
   hw.SetAudioBlockSize(48);  // Number of samples handled per callback
   hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
-
+  
   // Initialize LEDs
   led_verb.Init(hw.seed.GetPin(Hothouse::LED_1), false);
   led_trem.Init(hw.seed.GetPin(Hothouse::LED_2), false);
@@ -295,8 +313,10 @@ int main() {
   verb.Init(hw.AudioSampleRate());
   verb.SetFeedback(0.87);
   
-  delMem.Init();
-  delay.del = &delMem;
+  delMemL.Init();
+  delMemR.Init();
+  delayL.del = &delMemL;
+  delayR.del = &delMemR;
 
   hw.StartAdc();
   hw.StartAudio(AudioCallback);
