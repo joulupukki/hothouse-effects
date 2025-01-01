@@ -6,7 +6,6 @@ USE_DAISYSP_LGPL=1
 
 # Sources and Hothouse header files
 CPP_SOURCES = flick.cpp reverbsploodge.cpp ../hothouse.cpp
-
 C_INCLUDES = -I..
 
 # Library Locations

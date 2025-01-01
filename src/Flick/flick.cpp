@@ -289,7 +289,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 }
 
 int main() {
-  hw.Init();
+  hw.Init(true); // Init the CPU at full speed
   hw.SetAudioBlockSize(48);  // Number of samples handled per callback
   hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
   
