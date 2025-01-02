@@ -4,7 +4,9 @@ This is an implementation of a plate reverb and uses the Dattorro class from the
 
 ### Demo
 
-TODO: Build a demo video and show it here.
+Here's an early prototype demo (1 January 2025):
+
+[![Demo Video](https://img.youtube.com/vi/_LNq0G4vxGM/0.jpg)](https://youtu.be/_LNq0G4vxGM)
 
 ### Controls
 
