@@ -24,9 +24,9 @@
         "monitor reset"
       ],
       "request": "launch",
-      "runToMain": true,
+      "runToEntryPoint": "main",
       "servertype": "openocd",
-      "showDevDebugOutput": true,
+      "showDevDebugOutput": "vscode",
       "svdFile": "${workspaceRoot}/.vscode/STM32H750x.svd",
       "type": "cortex-debug"
     }

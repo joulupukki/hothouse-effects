@@ -23,7 +23,7 @@
 #include "hothouse.h"
 #include "ap_demo.hpp"
 #include "common.hpp"
-// #include "datorro_plate.hpp"
+#include "datorro_plate.hpp"
 #include "mutable_rings.hpp"
 
 #include <algorithm>
@@ -39,7 +39,8 @@ Hothouse hw;
 
 std::array<float, 32768> DSY_SDRAM_BSS delay_line_buffer;
 MutableRings reverb_(delay_line_buffer);
-// DatorroPlate plate_(delay_line_buffer);
+DatorroPlate plate_(delay_line_buffer);
+AllPassDemo apdemo_(delay_line_buffer);
 
 Parameter p_knob_1, p_knob_2, p_knob_3, p_knob_4, p_knob_5, p_knob_6;
 
@@ -83,16 +84,33 @@ void AudioCallback(AudioHandle::InterleavingInputBuffer in, AudioHandle::Interle
   if (!bypass_verb) {
     StereoSignal in_stereo{reinterpret_cast<const StereoSample*>(in), blocksize / 2};
     StereoBuffer out_stereo{reinterpret_cast<StereoSample*>(out), blocksize / 2};
-    reverb_.set_amount(strength * 0.5f);
-    reverb_.set_time(0.35f + 0.63f * size);
-    reverb_.set_input_gain(0.2f);
-    reverb_.set_lp(0.3f + shape * 0.6f);
-    reverb_.Process(in_stereo, out_stereo);
-    // plate_.set_amount(strength * 0.5f);
-    // plate_.set_time(0.35f + 0.65f * size);
-    // plate_.set_input_gain(0.2f);
-    // plate_.set_lp(0.3f + shape * 0.7f);
-    // plate_.Process(in_stereo, out_stereo);
+
+    static const int effect_type_values[] = {0, 1, 2};
+    int effect_type = effect_type_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
+
+    switch(effect_type) {
+      case 0:
+        reverb_.set_amount(strength * 0.5f);
+        reverb_.set_time(0.35f + 0.63f * size);
+        reverb_.set_input_gain(0.2f);
+        reverb_.set_lp(0.3f + shape * 0.6f);
+        reverb_.Process(in_stereo, out_stereo);
+        break;
+      case 1:
+        plate_.set_amount(strength * 0.5f);
+        plate_.set_time(0.35f + 0.65f * size);
+        plate_.set_input_gain(0.2f);
+        plate_.set_lp(0.3f + shape * 0.7f);
+        plate_.Process(in_stereo, out_stereo);
+        break;
+      case 2:
+        apdemo_.set_amount(strength);
+        apdemo_.set_input_gain(0.2f);
+        apdemo_.set_size(size);
+        apdemo_.set_diffusion(shape);
+        apdemo_.Process(in_stereo, out_stereo);
+        break;
+    }
   } else {
     std::copy_n(in, blocksize, out);
   }
@@ -114,9 +132,12 @@ int main() {
   p_knob_5.Init(hw.knobs[Hothouse::KNOB_5], 0.0f, 1.0f, Parameter::LINEAR);
   p_knob_6.Init(hw.knobs[Hothouse::KNOB_6], 0.0f, 1.0f, Parameter::LINEAR);
 
-  reverb_.Init(hw.AudioSampleRate());
-  // plate_.Init(hw.AudioSampleRate());
+  delay_line_buffer.fill(0);
 
+  reverb_.Init(hw.AudioSampleRate());
+  plate_.Init(hw.AudioSampleRate());
+  apdemo_.Init(hw.AudioSampleRate());
+ 
   hw.StartAdc();
   hw.StartAudio(AudioCallback);
 

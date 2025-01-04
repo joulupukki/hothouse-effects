@@ -1,7 +1,7 @@
 {
   "tasks": [
     {
-      "command": "make clean; make",
+      "command": "cmake --build build --target clean; cmake --build build",
       "group": {
         "isDefault": true,
         "kind": "build"
@@ -16,7 +16,7 @@
       "type": "shell"
     },
     {
-      "command": "make clean; make; make program",
+      "command": "cmake --build build --target clean; cmake --build build; make program",
       "label": "build_and_program",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -27,7 +27,7 @@
       "type": "shell"
     },
     {
-      "command": "make clean; make; make program-dfu",
+      "command": "cmake --build build --target clean; cmake --build build; make program-dfu",
       "label": "build_and_program_dfu",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -38,7 +38,7 @@
       "type": "shell"
     },
     {
-      "command": "make clean;make",
+      "command": "cmake --build build --target clean; cmake --build build",
       "dependsOn": [
         "build_libdaisy",
         "build_daisysp"
@@ -53,7 +53,7 @@
       "type": "shell"
     },
     {
-      "command": "make clean;DEBUG=1 make",
+      "command": "cmake --build build --target clean; DEBUG=1 cmake --build build",
       "dependsOn": [
         "build_libdaisy",
         "build_daisysp"
