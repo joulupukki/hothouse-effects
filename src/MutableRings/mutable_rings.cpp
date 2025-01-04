@@ -21,11 +21,12 @@
 
 #include "daisysp.h"
 #include "hothouse.h"
-
 #include "ap_demo.hpp"
 #include "common.hpp"
 // #include "datorro_plate.hpp"
 #include "mutable_rings.hpp"
+
+#include <algorithm>
 
 using clevelandmusicco::Hothouse;
 using daisy::AudioHandle;
@@ -38,6 +39,7 @@ Hothouse hw;
 
 std::array<float, 32768> DSY_SDRAM_BSS delay_line_buffer;
 MutableRings reverb_(delay_line_buffer);
+// DatorroPlate plate_(delay_line_buffer);
 
 Parameter p_knob_1, p_knob_2, p_knob_3, p_knob_4, p_knob_5, p_knob_6;
 
@@ -53,8 +55,10 @@ Led led_100p_wet, led_verb;
 bool bypass_100p_wet = true;
 bool bypass_verb = true;
 
-void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
-                   size_t bocksize) {
+// void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
+//                   size_t size) {
+void AudioCallback(AudioHandle::InterleavingInputBuffer in, AudioHandle::InterleavingOutputBuffer out,
+                   size_t blocksize) {
   hw.ProcessAllControls();
 
   //
@@ -76,20 +80,21 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   const float size = p_knob_2.Process();
   const float shape = p_knob_3.Process();
 
-  StereoSignal in_stereo{reinterpret_cast<const StereoSample*>(in), blocksize / 2};
-  StereoBuffer out_stereo{reinterpret_cast<StereoSample*>(out), blocksize / 2};
-
   if (!bypass_verb) {
+    StereoSignal in_stereo{reinterpret_cast<const StereoSample*>(in), blocksize / 2};
+    StereoBuffer out_stereo{reinterpret_cast<StereoSample*>(out), blocksize / 2};
     reverb_.set_amount(strength * 0.5f);
     reverb_.set_time(0.35f + 0.63f * size);
     reverb_.set_input_gain(0.2f);
     reverb_.set_lp(0.3f + shape * 0.6f);
     reverb_.Process(in_stereo, out_stereo);
+    // plate_.set_amount(strength * 0.5f);
+    // plate_.set_time(0.35f + 0.65f * size);
+    // plate_.set_input_gain(0.2f);
+    // plate_.set_lp(0.3f + shape * 0.7f);
+    // plate_.Process(in_stereo, out_stereo);
   } else {
-    for (size_t i = 0; i < size; ++i) {
-      out[0][i] = in[0][i];
-      out[1][i] = in[1][i];
-    }
+    std::copy_n(in, blocksize, out);
   }
 }
 
@@ -110,6 +115,7 @@ int main() {
   p_knob_6.Init(hw.knobs[Hothouse::KNOB_6], 0.0f, 1.0f, Parameter::LINEAR);
 
   reverb_.Init(hw.AudioSampleRate());
+  // plate_.Init(hw.AudioSampleRate());
 
   hw.StartAdc();
   hw.StartAudio(AudioCallback);
