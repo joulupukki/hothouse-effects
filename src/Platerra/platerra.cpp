@@ -176,7 +176,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
 int main() {
   hw.Init(true);
-  hw.SetAudioBlockSize(16);  // Number of samples handled per callback. Setting this higher introduces a weird high-pictched tone
+  hw.SetAudioBlockSize(8);  // Number of samples handled per callback. Setting this higher introduces a weird high-pictched tone
   hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
   // hw.SetAudioBlockSize(32);  // Number of samples handled per callback
   // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
