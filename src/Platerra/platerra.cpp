@@ -83,13 +83,6 @@ double inputAmplification = 1.0;
 
 Parameter p_knob_1, p_knob_2, p_knob_3, p_knob_4, p_knob_5, p_knob_6;
 
-// Parameter p_verb_dry, 
-//   p_verb_wet, 
-//   p_verb_delay, 
-//   p_verb_high_cut_freq, 
-//   p_verb_mod_speed, 
-//   p_verb_mod_depth;
-
 // Bypass vars
 Led led_100p_wet, led_verb;
 bool bypass_100p_wet = true;
@@ -183,7 +176,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
 int main() {
   hw.Init(true);
-  hw.SetAudioBlockSize(48);  // Number of samples handled per callback
+  hw.SetAudioBlockSize(8);  // Number of samples handled per callback. Setting this higher introduces a weird high-pictched tone
   hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
   // hw.SetAudioBlockSize(32);  // Number of samples handled per callback
   // hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_32KHZ);
