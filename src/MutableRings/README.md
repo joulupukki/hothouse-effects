@@ -16,7 +16,7 @@ TODO
 | KNOB 4 | - |  |
 | KNOB 5 | - |  |
 | KNOB 6 | - |  |
-| SWITCH 1 | - | **UP** -<br/>**MIDDLE** -<br/>**DOWN** - |
+| SWITCH 1 | Reverb Type | **UP** - Mutable Rings<br/>**MIDDLE** - Dattorro<br/>**DOWN** - All Pass|
 | SWITCH 2 | - | **UP** -<br/>**MIDDLE** -<br/>**DOWN** - |
 | SWITCH 3 | - | **UP** -<br/>**MIDDLE** -<br/>**DOWN** - |
 | FOOTSWITCH 1 | - | Long press for DFU mode (TODO: NOT WORKING). |

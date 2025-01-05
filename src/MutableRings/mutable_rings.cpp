@@ -81,7 +81,10 @@ void AudioCallback(AudioHandle::InterleavingInputBuffer in, AudioHandle::Interle
   const float size = p_knob_2.Process();
   const float shape = p_knob_3.Process();
 
+  std::copy_n(in, blocksize, out);
+
   if (!bypass_verb) {
+    // std::fill_n(out, blocksize, 0.0f);
     StereoSignal in_stereo{reinterpret_cast<const StereoSample*>(in), blocksize / 2};
     StereoBuffer out_stereo{reinterpret_cast<StereoSample*>(out), blocksize / 2};
 
@@ -111,8 +114,6 @@ void AudioCallback(AudioHandle::InterleavingInputBuffer in, AudioHandle::Interle
         apdemo_.Process(in_stereo, out_stereo);
         break;
     }
-  } else {
-    std::copy_n(in, blocksize, out);
   }
 }
 
