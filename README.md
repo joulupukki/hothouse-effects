@@ -8,6 +8,8 @@ This is my own personal collection of effects built for the [Hothouse DSP Pedal]
 
 [Platerra](src/Platerra/): A reverb based on the Dattorro reverb.
 
+[MutableRings](src/MutableRings/): A pedal with three styles of reverb.
+
 ### Installation
 
 Create a `daisy-seed/` directory on your computer.
@@ -43,4 +45,4 @@ make program-dfu
 
 ### License
 
-This software is licensed under the GNU General Public License (GPL) for open-source use.
+The project is licensed under the GNU General Public License (GPL) for open-source use. Some files use a different license. See specific files for per-file licensing.

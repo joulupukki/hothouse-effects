@@ -1,6 +1,6 @@
 # Mutable Rings (IN PROGRESS)
 
-TODO
+This pedal is based on the work of the [DaisyVerb](https://github.com/stellar-aria/daisyverb) project.
 
 ### Demo
 
@@ -24,9 +24,11 @@ TODO
 
 ### Installation
 
+This uses version 14.2 of the [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads). Download the `arm-none-eabi` .tar.xz file for your host operating system. For example, on my Silicon-based Mac, I chose `arm-gnu-toolchain-14.2.rel1-darwin-arm64-arm-none-eabi.tar.xz`. Unzip it and add the included `bin/` directory to your PATH environment.
+
 Run this to create the Makefile:
 ```
-cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake -B build
 ```
 (DEBUG is too big to fit)
 
@@ -42,4 +44,4 @@ make program-dfu
 
 ### License
 
-This software is licensed under the GNU General Public License (GPL) for open-source use.
+This software is licensed under the GNU General Public License (GPL) for open-source use. The DaisyVerb project is licensed under the MIT license and that includes all of the code inside of the `MutableRings/include/` directory.
