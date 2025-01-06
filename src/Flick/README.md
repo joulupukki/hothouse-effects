@@ -62,7 +62,7 @@ Inside of the `daisy-seed/` directory, clone this project:
 git clone https://github.com/joulupukki/hothouse-effects.git
 ```
 
-Download the submodules (third-party code that this project depends on): libDaisy, DaisySP, and PlateauNEVersio.
+Download the submodules (third-party code that this project depends on): libDaisy and DaisySP.
 ```
 cd hothouse-effects
 git submodule update --init --recursive
