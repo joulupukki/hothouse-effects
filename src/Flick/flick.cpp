@@ -397,6 +397,22 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     plateInputDampHigh = p_knob_5.Process() * 10.0; // Dattorro takes values for this between 0 and 10
     plateTankDampHigh = p_knob_6.Process() * 10.0; // Dattorro takes values for this between 0 and 10
 
+    //
+    // Read in all of the toggle switch values
+    //
+
+    // Switch 1 - Tank Mod Speed
+    static const float tank_mod_speed_values[] = {1.0f, 0.5f, 0.0f};
+    plateTankModSpeed = tank_mod_speed_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
+
+    // Switch 2 - Tank Mod Depth
+    static const float tank_mod_depth_values[] = {1.0f, 0.5f, 0.0f};
+    plateTankModDepth = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
+
+    // Switch 3 - Tank Mod Shape
+    static const float tank_mod_shape_values[] = {1.0f, 0.75f, 0.0f};
+    plateTankModShape = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
+
     verb.setDecay(plateDecay);
     verb.setTankDiffusion(plateTankDiffusion);
     verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
@@ -404,6 +420,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
     verb.setTankModSpeed(plateTankModSpeed);
     verb.setTankModDepth(plateTankModDepth);
+    verb.setTankModShape(plateTankModShape);
     verb.setPreDelay(platePreDelay);    
   }
 

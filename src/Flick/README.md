@@ -45,8 +45,8 @@ Here's an early alpha version of how it's working (27 December 2024):
 | KNOB 6 | Tank High Cutoff Frequency |  |
 | SWITCH 1 | Tank Mod Speed | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
 | SWITCH 2 | Tank Mod Depth | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
-| SWITCH 3 | Pre Delay | **UP** - 0.10<br/>**MIDDLE** - 0.05<br/>**DOWN** - Off |
-| FOOTSWITCH 1 | Cancels Reverb Edit mode | Long press for DFU mode. |
+| SWITCH 3 | Tank Mod Shape | **UP** - 1.00<br/>**MIDDLE** - 0.75<br/>**DOWN** - Off |
+| FOOTSWITCH 1 | Save & Exit | Saves all parameters and exits Reverb Edit Mode.<br/>Long press for DFU mode. |
 | FOOTSWITCH 2 | Save & Exit | Saves all parameters and exits Reverb Edit Mode. |
 
 ### Installation
