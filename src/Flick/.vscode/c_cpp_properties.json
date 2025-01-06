@@ -12,7 +12,7 @@
       "includePath": [
         "${workspaceFolder}/**",
         "${workspaceFolder}/../../libDaisy/**",
-        "${workspaceFolder}/../../DaisySP/**"
+        "${workspaceFolder}/../../DaisySP/**",
         "${workspaceFolder}/../../third-party/PlateauNEVersio/**"
       ],
       "name": "Win32",
