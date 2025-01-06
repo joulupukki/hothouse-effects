@@ -13,6 +13,7 @@
         "${workspaceFolder}/**",
         "${workspaceFolder}/../../libDaisy/**",
         "${workspaceFolder}/../../DaisySP/**"
+        "${workspaceFolder}/../../third-party/PlateauNEVersio/**"
       ],
       "name": "Win32",
       "windowsSdkVersion": "10.0.17763.0"

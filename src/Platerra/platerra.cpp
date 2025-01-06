@@ -36,17 +36,17 @@ Hothouse hw;
 Dattorro verb(48000, 16, 4.0);
 
 bool plateDiffusionEnabled = true;
-double platePreDelay = 0.;
+float platePreDelay = 0.;
 
-double plateDelay = 0.0;
+float plateDelay = 0.0;
 
 float plateDry = 1.0;
 float plateWet = 0.5;
 
-double plateDecay = 0.67;
-double plateTimeScale = 1.007500;
+float plateDecay = 0.67;
+float plateTimeScale = 1.007500;
 
-double plateTankDiffusion = 0.7;
+float plateTankDiffusion = 0.7;
 
   /**
    * Good Defaults
@@ -61,25 +61,25 @@ double plateTankDiffusion = 0.7;
    */
 
 // The damping values appear to be want to be between 0 and 10
-double plateInputDampLow = 2.87; // approx 100Hz
-double plateInputDampHigh = 6.77; // approx 1.5kHz
+float plateInputDampLow = 2.87; // approx 100Hz
+float plateInputDampHigh = 6.77; // approx 1.5kHz
 
-double plateTankDampLow = 2.87; // approx 100Hz
-double plateTankDampHigh = 6.77; // approx 1.5kHz
+float plateTankDampLow = 2.87; // approx 100Hz
+float plateTankDampHigh = 6.77; // approx 1.5kHz
 
-double plateTankModSpeed = 1.0;
-double plateTankModDepth = 0.5;
-double plateTankModShape = 0.75;
+float plateTankModSpeed = 1.0;
+float plateTankModDepth = 0.5;
+float plateTankModShape = 0.75;
 
-const double minus18dBGain = 0.12589254;
-const double minus20dBGain = 0.1;
+const float minus18dBGain = 0.12589254;
+const float minus20dBGain = 0.1;
 
-double leftInput = 0.;
-double rightInput = 0.;
-double leftOutput = 0.;
-double rightOutput = 0.;
+float leftInput = 0.;
+float rightInput = 0.;
+float leftOutput = 0.;
+float rightOutput = 0.;
 
-double inputAmplification = 1.0;
+float inputAmplification = 1.0;
 
 Parameter p_knob_1, p_knob_2, p_knob_3, p_knob_4, p_knob_5, p_knob_6;
 
@@ -131,26 +131,26 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   //
 
   // Switch 1 - Tank Mod Speed
-  static const double tank_mod_speed_values[] = {1.0f, 0.5f, 0.0f};
+  static const float tank_mod_speed_values[] = {1.0f, 0.5f, 0.0f};
   plateTankModSpeed = tank_mod_speed_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
 
   // Switch 2 - Tank Mod Depth
-  static const double tank_mod_depth_values[] = {1.0f, 0.5f, 0.0f};
+  static const float tank_mod_depth_values[] = {1.0f, 0.5f, 0.0f};
   plateTankModDepth = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
 
   // Switch 3 - Pre Delay
-  static const double pre_delay_values[] = {0.1f, 0.05f, 0.0f};
+  static const float pre_delay_values[] = {0.1f, 0.05f, 0.0f};
   platePreDelay = pre_delay_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
   if (!bypass_verb) {
-    verb.setDecay(plateDecay);
-    verb.setTankDiffusion(plateTankDiffusion);
-    verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
-    verb.setTankFilterHighCutFrequency(plateTankDampHigh);
+    // verb.setDecay(plateDecay);
+    // verb.setTankDiffusion(plateTankDiffusion);
+    // verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
+    // verb.setTankFilterHighCutFrequency(plateTankDampHigh);
 
-    verb.setTankModSpeed(plateTankModSpeed);
-    verb.setTankModDepth(plateTankModDepth);
-    verb.setPreDelay(platePreDelay);    
+    // verb.setTankModSpeed(plateTankModSpeed);
+    // verb.setTankModDepth(plateTankModDepth);
+    // verb.setPreDelay(platePreDelay);    
 
     for (size_t i = 0; i < size; ++i) {
       // Dattorro seems to want to have values between -10 and 10 so times by 10
@@ -163,8 +163,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
       rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
 
-      out[0][i] = (float)leftOutput;
-      out[1][i] = (float)rightOutput;
+      out[0][i] = leftOutput;
+      out[1][i] = rightOutput;
     }
   } else {
     for (size_t i = 0; i < size; ++i) {
