@@ -176,7 +176,7 @@ float rightOutput = 0.;
 float inputAmplification = 1.0; // This isn't really used yet
 
 static const uint32_t LONG_PRESS_THRESHOLD = 2000; // 2 second hold time
-static const uint32_t float_PRESS_THRESHOLD = 700;  // milliseconds
+static const uint32_t DOUBLE_PRESS_THRESHOLD = 600;  // milliseconds
 bool footswitch_last_state[] = {false, false}; // Assume initial state is open
 int footswitch_press_count[] = {0, 0};
 uint32_t footswitch_start_time[] = {0, 0};
@@ -184,6 +184,24 @@ uint32_t footswitch_last_press_time[] = {0, 0};
 bool footswitch_long_press_triggered[] = {false, false};
 
 bool trigger_settings_save = false;
+
+/// @brief Used at startup to control a factory reset.
+///
+/// This gets set to true in `main()` if footswitch 2 is depressed at boot.
+/// The LED lights will start flashing alternatively. To exit this mode without
+/// making any changes, press either footswitch.
+///
+/// To reset, rotate knob_1 to 100%, to 0%, to 100%, and back to 0%. This will
+/// restore all defaults and then go into normal pedal mode.
+bool is_factory_reset_mode = false;
+
+/// @brief Tracks the stage of knob_1 rotation in factory reset mode.
+///
+/// 0: User must rotate knob_1 to 100% to advance to the next stage.
+/// 1: User must rotate knob_1 to 0% to advance to the next stage.
+/// 2: User must rotate knob_1 to 100% to advance to the next stage.
+/// 3: User must rotate knob_1 to 0% to complete the factory reset.
+int factory_reset_stage = 0;
 
 void load_settings() {
 
@@ -217,6 +235,15 @@ void load_settings() {
   plateTankModDepth = LocalSettings.tankModDepth;
   plateTankModShape = LocalSettings.tankModShape;
   platePreDelay = LocalSettings.preDelay;
+
+  verb.setPreDelay(platePreDelay);
+  verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
+  verb.setDecay(plateDecay);
+  verb.setTankDiffusion(plateTankDiffusion);
+  verb.setTankFilterHighCutFrequency(plateTankDampHigh);
+  verb.setTankModSpeed(plateTankModSpeed);
+  verb.setTankModDepth(plateTankModDepth);
+  verb.setTankModShape(plateTankModShape);
 }
 
 void save_settings() {
@@ -285,7 +312,7 @@ void check_footswitch_state(Hothouse::Switches footswitch, bool is_pressed) {
     // Button pressed
     footswitch_start_time[footswitch_index] = now;
 
-    if ((now - footswitch_last_press_time[footswitch_index]) <= float_PRESS_THRESHOLD) {
+    if ((now - footswitch_last_press_time[footswitch_index]) <= DOUBLE_PRESS_THRESHOLD) {
       footswitch_press_count[footswitch_index]++;
     } else {
       footswitch_press_count[footswitch_index] = 1;
@@ -320,6 +347,14 @@ void check_footswitch_state(Hothouse::Switches footswitch, bool is_pressed) {
 
 inline float hardLimit100_(const float &x) {
     return (x > 1.) ? 1. : ((x < -1.) ? -1. : x);
+}
+
+void quick_led_flash() {
+  led_left.Set(1.0f);
+  led_right.Set(1.0f);
+  led_left.Update();
+  led_right.Update();
+  hw.DelayMs(500);
 }
 
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
@@ -370,7 +405,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     trem.SetFreq(p_trem_speed.Process());
     trem.SetDepth(p_trem_depth.Process());
 
-    static const uint8_t trem_waveforms[] = {Oscillator::WAVE_RAMP, Oscillator::WAVE_TRI, Oscillator::WAVE_SIN};
+    // static const uint8_t trem_waveforms[] = {Oscillator::WAVE_SQUARE_ROUNDED, Oscillator::WAVE_TRI, Oscillator::WAVE_SIN};
+    static const uint8_t trem_waveforms[] = {Oscillator::WAVE_SQUARE, Oscillator::WAVE_TRI, Oscillator::WAVE_SIN};
     trem_waveform = trem_waveforms[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
     trem.SetWaveform(trem_waveform);
 
@@ -411,7 +447,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
     // Switch 3 - Tank Mod Shape
     static const float tank_mod_shape_values[] = {1.0f, 0.75f, 0.0f};
-    plateTankModShape = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
+    plateTankModShape = tank_mod_shape_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
     verb.setDecay(plateDecay);
     verb.setTankDiffusion(plateTankDiffusion);
@@ -534,6 +570,12 @@ int main() {
   // InterpDelay.cpp file.
   hold = 1.;
 
+  verb.setSampleRate(48000);
+  verb.setTimeScale(plateTimeScale);
+  verb.enableInputDiffusion(plateDiffusionEnabled);
+  verb.setInputFilterLowCutoffPitch(plateInputDampLow);
+  verb.setTankFilterLowCutFrequency(plateTankDampLow);
+
   Settings defaultSettings = {
     SETTINGS_VERSION, // version
     plateDecay,
@@ -549,28 +591,69 @@ int main() {
 
   load_settings();
 
-  verb.setSampleRate(48000);
-  verb.setTimeScale(plateTimeScale);
-  verb.setPreDelay(platePreDelay);
-  verb.setInputFilterLowCutoffPitch(plateInputDampLow);
-  verb.setInputFilterHighCutoffPitch(plateInputDampHigh);
-  verb.enableInputDiffusion(plateDiffusionEnabled);
-  verb.setDecay(plateDecay);
-  verb.setTankDiffusion(plateTankDiffusion);
-  verb.setTankFilterLowCutFrequency(plateTankDampLow);
-  verb.setTankFilterHighCutFrequency(plateTankDampHigh);
-  verb.setTankModSpeed(plateTankModSpeed);
-  verb.setTankModDepth(plateTankModDepth);
-  verb.setTankModShape(plateTankModShape);
-  
   hw.StartAdc();
-  hw.StartAudio(AudioCallback);
-
+  hw.ProcessAllControls();
+  if (hw.switches[Hothouse::FOOTSWITCH_2].RawState()) {
+    is_factory_reset_mode = true;
+  } else {
+    hw.StartAudio(AudioCallback);
+  }
+  
   while (true) {
     if(trigger_settings_save) {
 			SavedSettings.Save(); // Writing locally stored settings to the external flash
 			trigger_settings_save = false;
-		}
+		} else if (is_factory_reset_mode) {
+      hw.ProcessAllControls();
+
+      // if (hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge() || hw.switches[Hothouse::FOOTSWITCH_2].RisingEdge()) {
+      //   // Exit firmware reset mode
+      //   hw.StartAudio(AudioCallback);
+      //   factory_reset_stage = 0;
+      //   is_factory_reset_mode = false;
+      // } else {
+        static uint32_t last_led_toggle_time = 0;
+        static bool led_toggle = false;
+        static uint32_t blink_interval = 1000;
+        uint32_t now = System::GetNow();
+        uint32_t elapsed_time = now - last_led_toggle_time;
+        if (elapsed_time >= blink_interval) {
+          // Alternate the LED lights in factory reset mode
+          last_led_toggle_time = now;
+          led_toggle = !led_toggle;
+          led_left.Set(led_toggle ? 1.0f : 0.0f);
+          led_right.Set(led_toggle ? 0.0f : 1.0f);
+          led_left.Update();
+          led_right.Update();
+        }
+
+        float low_knob_threshold = 0.05;
+        float high_knob_threshold = 0.95;
+        float blink_faster_amount = 300; // each stage removes this many MS from the factory reset blinking
+        float knob_1_value = p_knob_1.Process();
+        if (factory_reset_stage == 0 && knob_1_value >= high_knob_threshold) {
+          factory_reset_stage++;
+          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+          quick_led_flash();          
+        } else if (factory_reset_stage == 1 && knob_1_value <= low_knob_threshold) {
+          factory_reset_stage++;
+          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+          quick_led_flash();          
+        } else if (factory_reset_stage == 2 && knob_1_value >= high_knob_threshold) {
+          factory_reset_stage++;
+          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+          quick_led_flash();          
+        } else if (factory_reset_stage == 3 && knob_1_value <= low_knob_threshold) {
+          SavedSettings.RestoreDefaults();
+          load_settings();
+          quick_led_flash();          
+
+          hw.StartAudio(AudioCallback);
+          factory_reset_stage = 0;
+          is_factory_reset_mode = false;
+        }
+      // }
+    }
     hw.DelayMs(10);
 
     // Toggle effect bypass LED when footswitch is pressed
@@ -579,6 +662,6 @@ int main() {
 
     // Call System::ResetToBootloader() if FOOTSWITCH_1 is pressed for 2 seconds
     hw.CheckResetToBootloader();
- }
+  }
   return 0;
 }
