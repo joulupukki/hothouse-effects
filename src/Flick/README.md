@@ -4,10 +4,7 @@ This is a reverb, tremolo, and delay pedal. The original goal of this pedal was 
 
 ### Effects
 
-**Sploodge Reverb:** This is a reverb that adds a few extra parameters to the
-ReverbSc reverb and was shamelessly "borrowed" from this project:
-
-https://github.com/wgd-modular/loewenzahnhonig-firmware/tree/main/src/splooge-reverb
+**Platerra Reverb:** This is a plate reverb based on the Dattorro reverb. It's also available in this project in the [src/Platerra/](src/Platerra/) subdirectory.
 
 **Tremolo:** Sine wave based tremolo meant to mimic tube bias tremolo found
 on some Fender amps. It's nice and smooth just like you'd expect.
@@ -20,7 +17,7 @@ Here's an early alpha version of how it's working (27 December 2024):
 
 [![Demo Video](https://img.youtube.com/vi/-sD-U93r3Rw/0.jpg)](https://youtu.be/-sD-U93r3Rw)
 
-### Controls
+### Controls (Normal Mode)
 
 | CONTROL | DESCRIPTION | NOTES |
 |-|-|-|
@@ -30,11 +27,27 @@ Here's an early alpha version of how it's working (27 December 2024):
 | KNOB 4 | Delay Time |  |
 | KNOB 5 | Delay Feedback |  |
 | KNOB 6 | Delay Dry/Wet Amount |  |
-| SWITCH 1 | Reverb Feedback | **UP** - High<br/>**MIDDLE** - Med<br/>**DOWN** - Low |
-| SWITCH 2 | Reverb Tone | **UP** - Bright<br/>**MIDDLE** - Neutral<br/>**DOWN** - Dark |
-| SWITCH 3 | Sploodge | **UP** - Shimmer<br/>**MIDDLE** - Subtle<br/>**DOWN** - Off |
-| FOOTSWITCH 1 | Reverb On/Off | Long press for DFU mode. |
+| SWITCH 1 | ? | **UP** - <br/>**MIDDLE** - <br/>**DOWN** -  |
+| SWITCH 2 | Tremolo Waveform | **UP** - Sawtooth<br/>**MIDDLE** - Triangle<br/>**DOWN** - Sine |
+| SWITCH 3 | ? | **UP** - <br/>**MIDDLE** - <br/>**DOWN** -  |
+| FOOTSWITCH 1 | Reverb On/Off | Normal press toggles reverb on/off.<br/>Double press toggles reverb edit mode (see below).<br/>Long press for DFU mode. |
 | FOOTSWITCH 2 | Delay/Tremolo On/Off | Normal press toggles delay.<br/>Double press toggles tremolo.<br/><br/>**LED:**<br/>- 100% when only relay is active<br/>- 40% pulsing when only tremolo is active<br/>- 100% pulsing when both are active |
+
+### Controls (Reverb Edit Mode)
+
+| CONTROL | DESCRIPTION | NOTES |
+|-|-|-|
+| KNOB 1 | Reverb Amount (Wet) | Not saved. Just here for convenience. |
+| KNOB 2 | Pre Delay | 0 for Off, up to 0.25 |
+| KNOB 3 | Decay |  |
+| KNOB 4 | Tank Diffusion |  |
+| KNOB 5 | Input High Cutoff Frequency |  |
+| KNOB 6 | Tank High Cutoff Frequency |  |
+| SWITCH 1 | Tank Mod Speed | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
+| SWITCH 2 | Tank Mod Depth | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
+| SWITCH 3 | Pre Delay | **UP** - 0.10<br/>**MIDDLE** - 0.05<br/>**DOWN** - Off |
+| FOOTSWITCH 1 | Cancels Reverb Edit mode | Long press for DFU mode. |
+| FOOTSWITCH 2 | Save & Exit | Saves all parameters and exits Reverb Edit Mode. |
 
 ### Installation
 
@@ -48,7 +61,7 @@ Inside of the `daisy-seed/` directory, clone this project:
 git clone https://github.com/joulupukki/hothouse-effects.git
 ```
 
-Download the submodules (third-party code that this project depends on): libDaisy and DaisySP.
+Download the submodules (third-party code that this project depends on): libDaisy, DaisySP, and PlateauNEVersio.
 ```
 cd hothouse-effects
 git submodule update --init --recursive
