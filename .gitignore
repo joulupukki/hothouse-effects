@@ -1,3 +1,4 @@
 .DS_Store
 build/
 src/MutableRings/Makefile
+.vscode/settings.json
