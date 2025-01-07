@@ -297,13 +297,13 @@ void handle_normal_press(Hothouse::Switches footswitch) {
   }
 }
 
-void handle_float_press(Hothouse::Switches footswitch) {
-  // Ignore float presses in reverb edit mode
+void handle_double_press(Hothouse::Switches footswitch) {
+  // Ignore double presses in reverb edit mode
   if (verb_mode == REVERB_MODE_EDIT) {
     return;
   }
 
-  // When float press is detected, a normal press was already detected and
+  // When double press is detected, a normal press was already detected and
   // processed, so reverse that right off the bat.
   handle_normal_press(footswitch);
 
@@ -319,49 +319,6 @@ void handle_float_press(Hothouse::Switches footswitch) {
 
 void handle_long_press(Hothouse::Switches footswitch) {
   // Intentionally blank
-}
-
-/// @brief Watch Footswitches for singla and float presses.
-void check_footswitch_state(Hothouse::Switches footswitch, bool is_pressed) {  
-  int footswitch_index = footswitch == Hothouse::FOOTSWITCH_1 ? 0 : 1;
-
-  uint32_t now = System::GetNow();
-
-  if (is_pressed == true && footswitch_last_state[footswitch_index] == false) {
-    // Button pressed
-    footswitch_start_time[footswitch_index] = now;
-
-    if ((now - footswitch_last_press_time[footswitch_index]) <= DOUBLE_PRESS_THRESHOLD) {
-      footswitch_press_count[footswitch_index]++;
-    } else {
-      footswitch_press_count[footswitch_index] = 1;
-    }
-
-    footswitch_last_press_time[footswitch_index] = now;
-    footswitch_long_press_triggered[footswitch_index] = false; // Reset long press trigger when pressed
-  }
-
-  uint32_t press_duration = now - footswitch_start_time[footswitch_index];
-
-  if (is_pressed == true && press_duration >= LONG_PRESS_THRESHOLD && !footswitch_long_press_triggered[footswitch_index]) {
-    // Footswitch is being held down
-    handle_long_press(footswitch);
-    footswitch_long_press_triggered[footswitch_index] = true; // Ensure long press is only triggered once
-  }
-
-  if (is_pressed == false && footswitch_last_state[footswitch_index] == true) {
-    // Button released
-    if (!footswitch_long_press_triggered[footswitch_index]) {
-      if (footswitch_press_count[footswitch_index] >= 2) {
-        handle_float_press(footswitch);
-        footswitch_press_count[footswitch_index] = 0;
-      } else if (press_duration < LONG_PRESS_THRESHOLD) {
-        handle_normal_press(footswitch);
-      }
-    }
-  }
-
-  footswitch_last_state[footswitch_index] = is_pressed;
 }
 
 inline float hardLimit100_(const float &x) {
@@ -415,10 +372,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   }
   led_left.Update();
   led_right.Update();
-
-  // Handles all footswitch presses and float-presses
-  check_footswitch_state(Hothouse::FOOTSWITCH_1, hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge());
-  check_footswitch_state(Hothouse::FOOTSWITCH_2, hw.switches[Hothouse::FOOTSWITCH_2].RisingEdge());
 
   plateWet = p_verb_amt.Process();
 
@@ -620,6 +573,13 @@ int main() {
   SavedSettings.Init(defaultSettings);
 
   load_settings();
+
+  Hothouse::FootswitchCallbacks callbacks = {
+    .HandleNormalPress = handle_normal_press,
+    .HandleDoublePress = handle_double_press,
+    .HandleLongPress = handle_long_press
+  };
+  hw.RegisterFootswitchCallbacks(&callbacks);
 
   hw.StartAdc();
   hw.ProcessAllControls();
