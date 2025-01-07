@@ -21,9 +21,12 @@
 
 #include "daisy.h"
 #include "daisysp.h"
+#include "extended_oscillator.h"
 #include "hothouse.h"
 #include "Dattorro.hpp"
+#include <math.h>
 
+using clevelandmusicco::ExtendedOscillator;
 using clevelandmusicco::Hothouse;
 using daisy::AudioHandle;
 using daisy::Led;
@@ -33,8 +36,6 @@ using daisy::SaiHandle;
 using daisy::System;
 using daisysp::DelayLine;
 using daisysp::fonepole;
-using daisysp::Oscillator;
-using daisysp::Tremolo;
 
 /// Increment this when changing the settings struct so the software will know
 /// to reset to defaults if this ever changes.
@@ -81,8 +82,8 @@ struct Settings {
 //Persistent Storage Declaration. Using type Settings and passed the devices qspi handle
 PersistentStorage<Settings> SavedSettings(hw.seed.qspi);
 
-Tremolo trem;
-uint8_t trem_waveform = Oscillator::WAVE_SIN;
+ExtendedOscillator osc;
+float dc_os = 0;
 
 DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemL;
 DelayLine<float, MAX_DELAY> DSY_SDRAM_BSS delMemR;
@@ -124,6 +125,12 @@ enum TremDelMakeUpGain {
   TV_MAKEUP_GAIN_NONE,
   TV_MAKEUP_GAIN_NORMAL,
   TV_MAKEUP_GAIN_HEAVY,
+};
+
+constexpr int kWaveformMap[] = {
+    ExtendedOscillator::WAVE_SQUARE_ROUNDED, // UP
+    ExtendedOscillator::WAVE_TRI,            // MIDDLE
+    ExtendedOscillator::WAVE_SIN,            // DOWN
 };
 
 Delay delayL;
@@ -419,13 +426,14 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   TremDelMakeUpGain makeup_gain = makeup_gain_options[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
   if (verb_mode == REVERB_MODE_NORMAL) {
-    trem.SetFreq(p_trem_speed.Process());
-    trem.SetDepth(p_trem_depth.Process());
+    osc.SetFreq(p_trem_speed.Process());
+    static float depth = 0;
+    depth = daisysp::fclamp(p_trem_depth.Process(), 0.f, 1.f);
+    depth *= 0.5f;
+    osc.SetAmp(depth);
+    dc_os = 1.f - depth;
 
-    // static const uint8_t trem_waveforms[] = {Oscillator::WAVE_SQUARE_ROUNDED, Oscillator::WAVE_TRI, Oscillator::WAVE_SIN};
-    static const uint8_t trem_waveforms[] = {Oscillator::WAVE_SQUARE, Oscillator::WAVE_TRI, Oscillator::WAVE_SIN};
-    trem_waveform = trem_waveforms[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
-    trem.SetWaveform(trem_waveform);
+    osc.SetWaveform(kWaveformMap[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)]);
 
     //
     // Delay
@@ -512,7 +520,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
     if (!bypass_trem) {
       // trem_val gets used above for pulsing LED
-      trem_val = trem.Process(1.f);
+      trem_val = dc_os + osc.Process();
       float trem_make_up_gain = makeup_gain == TV_MAKEUP_GAIN_NONE ? 1.0f : makeup_gain == TV_MAKEUP_GAIN_NORMAL ? 1.2f : 1.6f;
 
       s_L = s_L * trem_val * trem_make_up_gain;
@@ -577,8 +585,7 @@ int main() {
   delayL.del = &delMemL;
   delayR.del = &delMemR;
 
-  trem.Init(hw.AudioSampleRate());
-  trem.SetWaveform(trem_waveform); // Only sine wave supported
+  osc.Init(hw.AudioSampleRate());
 
   //
   // Dattorro Reverb Initialization
