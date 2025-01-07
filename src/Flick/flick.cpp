@@ -127,10 +127,22 @@ enum TremDelMakeUpGain {
   TV_MAKEUP_GAIN_HEAVY,
 };
 
+constexpr ReverbKnobMode kReverbKnobMap[] = {
+  REVERB_KNOB_ALL_WET,                        // UP
+  REVERB_KNOB_DRY_WET_MIX,                    // MIDDLE
+  REVERB_KNOB_ALL_DRY,                        // DOWN
+};
+
+constexpr TremDelMakeUpGain kMakeupGainMap[] = {
+  TV_MAKEUP_GAIN_HEAVY,                       // UP
+  TV_MAKEUP_GAIN_NORMAL,                      // MIDDLE
+  TV_MAKEUP_GAIN_NONE,                        // DOWN
+};
+
 constexpr int kWaveformMap[] = {
-    ExtendedOscillator::WAVE_SQUARE_ROUNDED, // UP
-    ExtendedOscillator::WAVE_TRI,            // MIDDLE
-    ExtendedOscillator::WAVE_SIN,            // DOWN
+    ExtendedOscillator::WAVE_SQUARE_ROUNDED,  // UP
+    ExtendedOscillator::WAVE_TRI,             // MIDDLE
+    ExtendedOscillator::WAVE_SIN,             // DOWN
 };
 
 Delay delayL;
@@ -194,14 +206,6 @@ float rightOutput = 0.;
 
 float inputAmplification = 1.0; // This isn't really used yet
 
-static const uint32_t LONG_PRESS_THRESHOLD = 2000; // 2 second hold time
-static const uint32_t DOUBLE_PRESS_THRESHOLD = 600;  // milliseconds
-bool footswitch_last_state[] = {false, false}; // Assume initial state is open
-int footswitch_press_count[] = {0, 0};
-uint32_t footswitch_start_time[] = {0, 0};
-uint32_t footswitch_last_press_time[] = {0, 0};
-bool footswitch_long_press_triggered[] = {false, false};
-
 bool trigger_settings_save = false;
 
 /// @brief Used at startup to control a factory reset.
@@ -226,16 +230,6 @@ void load_settings() {
 
 	// Reference to local copy of settings stored in flash
 	Settings &LocalSettings = SavedSettings.GetSettings();
-
-  // int version; // Version of the settings struct
-  // float decay;
-  // float diffusion;
-  // float inputCutoffFreq;
-  // float tankCutoffFreq;
-  // float tankModSpeed;
-  // float tankModDepth;
-  // float tankModShape;
-  // float preDelay;
 
   int savedVersion = LocalSettings.version;
 
@@ -336,7 +330,6 @@ void quick_led_flash() {
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
                    size_t size) {
   static float trem_val;
-  // float verb_amt;
   hw.ProcessAllControls();
 
   if (verb_mode == REVERB_MODE_EDIT) {
@@ -375,8 +368,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
 
   plateWet = p_verb_amt.Process();
 
-  static const TremDelMakeUpGain makeup_gain_options[] = {TV_MAKEUP_GAIN_HEAVY, TV_MAKEUP_GAIN_NORMAL, TV_MAKEUP_GAIN_NONE};
-  TremDelMakeUpGain makeup_gain = makeup_gain_options[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
+  TremDelMakeUpGain makeup_gain = kMakeupGainMap[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
   if (verb_mode == REVERB_MODE_NORMAL) {
     osc.SetFreq(p_trem_speed.Process());
@@ -396,10 +388,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     delay_drywet = (int)p_delay_amt.Process();
 
     // Reverb dry/wet mode
-    static const ReverbKnobMode verb_knob_modes[] = {REVERB_KNOB_ALL_WET, REVERB_KNOB_DRY_WET_MIX, REVERB_KNOB_ALL_DRY};
-    ReverbKnobMode knob_mode = verb_knob_modes[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
-
-    switch (knob_mode) {
+    switch (kReverbKnobMap[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)]) {
       case REVERB_KNOB_ALL_DRY:
         plateDry = 1.0;
         break;
@@ -480,10 +469,6 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       s_R = s_R * trem_val * trem_make_up_gain;
     }
     if (!bypass_verb) {
-      // float out_L, out_R;
-      // verb.Process(s_L, s_R, &out_L, &out_R);
-      // verb_amt = p_verb_amt.Process();
-
       // Dattorro seems to want to have values between -10 and 10 so times by 10
       leftInput = hardLimit100_(s_L) * 10.0f;
       rightInput = hardLimit100_(s_R) * 10.0f;
@@ -638,10 +623,6 @@ int main() {
       }
     }
     hw.DelayMs(10);
-
-    // Toggle effect bypass LED when footswitch is pressed
-    // led_bypass.Set(bypass ? 0.0f : 1.0f);
-    // led_bypass.Update();
 
     // Call System::ResetToBootloader() if FOOTSWITCH_1 is pressed for 2 seconds
     hw.CheckResetToBootloader();
