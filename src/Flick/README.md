@@ -27,9 +27,9 @@ Here's an early alpha version of how it's working (27 December 2024):
 | KNOB 4 | Delay Time |  |
 | KNOB 5 | Delay Feedback |  |
 | KNOB 6 | Delay Dry/Wet Amount |  |
-| SWITCH 1 | ? | **UP** - <br/>**MIDDLE** - <br/>**DOWN** -  |
+| SWITCH 1 | Reverb knob funcion | **UP** - 0% Dry, 0-100% Wet<br/>**MIDDLE** - Dry/Wet Mix<br/>**DOWN** - 100% Dry, 0-100% Wet |
 | SWITCH 2 | Tremolo Waveform | **UP** - Square<br/>**MIDDLE** - Triangle<br/>**DOWN** - Sine<br/>*Square wave currently clicks and this is a [known bug](https://github.com/joulupukki/hothouse-effects/issues/9).* |
-| SWITCH 3 | ? | **UP** - <br/>**MIDDLE** - <br/>**DOWN** -  |
+| SWITCH 3 | Trem & Delay Makeup Gain | **UP** - Plus<br/>**MIDDLE** - Normal<br/>**DOWN** - None |
 | FOOTSWITCH 1 | Reverb On/Off | Normal press toggles reverb on/off.<br/>Double press toggles reverb edit mode (see below).<br/>Long press for DFU mode. |
 | FOOTSWITCH 2 | Delay/Tremolo On/Off | Normal press toggles delay.<br/>Double press toggles tremolo.<br/><br/>**LED:**<br/>- 100% when only relay is active<br/>- 40% pulsing when only tremolo is active<br/>- 100% pulsing when both are active |
 
@@ -44,9 +44,9 @@ Here's an early alpha version of how it's working (27 December 2024):
 | KNOB 4 | Tank Diffusion |  |
 | KNOB 5 | Input High Cutoff Frequency |  |
 | KNOB 6 | Tank High Cutoff Frequency |  |
-| SWITCH 1 | Tank Mod Speed | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
-| SWITCH 2 | Tank Mod Depth | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Off |
-| SWITCH 3 | Tank Mod Shape | **UP** - 1.00<br/>**MIDDLE** - 0.75<br/>**DOWN** - Off |
+| SWITCH 1 | Tank Mod Speed | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Low |
+| SWITCH 2 | Tank Mod Depth | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Low |
+| SWITCH 3 | Tank Mod Shape | **UP** - High<br/>**MIDDLE** - Medium<br/>**DOWN** - Low |
 | FOOTSWITCH 1 | Save & Exit | Saves all parameters and exits Reverb Edit Mode.<br/>Long press for DFU mode. |
 | FOOTSWITCH 2 | Save & Exit | Saves all parameters and exits Reverb Edit Mode. |
 

@@ -114,6 +114,18 @@ struct Delay {
   }
 };
 
+enum ReverbKnobMode {
+  REVERB_KNOB_ALL_DRY,
+  REVERB_KNOB_DRY_WET_MIX,
+  REVERB_KNOB_ALL_WET,
+};
+
+enum TremDelMakeUpGain {
+  TV_MAKEUP_GAIN_NONE,
+  TV_MAKEUP_GAIN_NORMAL,
+  TV_MAKEUP_GAIN_HEAVY,
+};
+
 Delay delayL;
 Delay delayR;
 int delay_drywet;
@@ -134,7 +146,7 @@ float platePreDelay = 0.;
 
 float plateDelay = 0.0;
 
-// float plateDry = 1.0;
+float plateDry = 1.0;
 float plateWet = 0.5;
 
 float plateDecay = 0.67;
@@ -401,6 +413,11 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
   check_footswitch_state(Hothouse::FOOTSWITCH_1, hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge());
   check_footswitch_state(Hothouse::FOOTSWITCH_2, hw.switches[Hothouse::FOOTSWITCH_2].RisingEdge());
 
+  plateWet = p_verb_amt.Process();
+
+  static const TremDelMakeUpGain makeup_gain_options[] = {TV_MAKEUP_GAIN_HEAVY, TV_MAKEUP_GAIN_NORMAL, TV_MAKEUP_GAIN_NONE};
+  TremDelMakeUpGain makeup_gain = makeup_gain_options[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
+
   if (verb_mode == REVERB_MODE_NORMAL) {
     trem.SetFreq(p_trem_speed.Process());
     trem.SetDepth(p_trem_depth.Process());
@@ -416,17 +433,25 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     delayL.delayTarget = delayR.delayTarget =  p_delay_time.Process();
     delayL.feedback = delayR.feedback = p_delay_feedback.Process();
     delay_drywet = (int)p_delay_amt.Process();
-  }
 
-  plateWet = p_verb_amt.Process();
-  // plateDry = 1.0 - plateWet;
-  // s_L = (s_L * (1.0f - verb_amt) + verb_amt * out_L);
-  // s_R = (s_R * (1.0f - verb_amt) + verb_amt * out_R);
+    // Reverb dry/wet mode
+    static const ReverbKnobMode verb_knob_modes[] = {REVERB_KNOB_ALL_WET, REVERB_KNOB_DRY_WET_MIX, REVERB_KNOB_ALL_DRY};
+    ReverbKnobMode knob_mode = verb_knob_modes[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
 
-  if (verb_mode == REVERB_MODE_EDIT) {
+    switch (knob_mode) {
+      case REVERB_KNOB_ALL_DRY:
+        plateDry = 1.0;
+        break;
+      case REVERB_KNOB_DRY_WET_MIX:
+        plateDry = 1.0 - plateWet;
+        break;
+      case REVERB_KNOB_ALL_WET:
+        plateDry = 0.0f;
+        break;
+    }
+  } else if (verb_mode == REVERB_MODE_EDIT) {
     // Edit mode
-    // plateDry = p_knob_1.Process();
-    plateWet = p_knob_1.Process();
+    plateDry = 1.0; // Always use dry 100% in edit mode
     platePreDelay = p_knob_2.Process() * 0.25;
     plateDecay = p_knob_3.Process();        
     plateTankDiffusion = p_knob_4.Process();
@@ -438,15 +463,15 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     //
 
     // Switch 1 - Tank Mod Speed
-    static const float tank_mod_speed_values[] = {1.0f, 0.5f, 0.0f};
+    static const float tank_mod_speed_values[] = {1.0f, 0.5f, 0.1f};
     plateTankModSpeed = tank_mod_speed_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)];
 
     // Switch 2 - Tank Mod Depth
-    static const float tank_mod_depth_values[] = {1.0f, 0.5f, 0.0f};
+    static const float tank_mod_depth_values[] = {1.0f, 0.5f, 0.1f};
     plateTankModDepth = tank_mod_depth_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_2)];
 
     // Switch 3 - Tank Mod Shape
-    static const float tank_mod_shape_values[] = {1.0f, 0.75f, 0.0f};
+    static const float tank_mod_shape_values[] = {1.0f, 0.5f, 0.1f};
     plateTankModShape = tank_mod_shape_values[hw.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_3)];
 
     verb.setDecay(plateDecay);
@@ -478,7 +503,7 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       mixL += sigL;
       mixR += sigR;
 
-      float delay_make_up_gain = 1.66;
+      float delay_make_up_gain = makeup_gain == TV_MAKEUP_GAIN_NONE ? 1.0f : makeup_gain == TV_MAKEUP_GAIN_NORMAL ? 1.66f : 2.0f;
 
       // apply drywet and attenuate
       s_L = fdrywet * mixL * 0.333f + (1.0f - fdrywet) * s_L * delay_make_up_gain;
@@ -488,10 +513,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
     if (!bypass_trem) {
       // trem_val gets used above for pulsing LED
       trem_val = trem.Process(1.f);
-      float trem_make_up_gain = 1.2;
+      float trem_make_up_gain = makeup_gain == TV_MAKEUP_GAIN_NONE ? 1.0f : makeup_gain == TV_MAKEUP_GAIN_NORMAL ? 1.2f : 1.6f;
+
       s_L = s_L * trem_val * trem_make_up_gain;
       s_R = s_R * trem_val * trem_make_up_gain;
-      // s = s * trem_val;
     }
     if (!bypass_verb) {
       // float out_L, out_R;
@@ -505,10 +530,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out,
       verb.process(leftInput * minus18dBGain * minus20dBGain * (1.0f + inputAmplification * 7.0f) * clearPopCancelValue,
                     rightInput * minus18dBGain * minus20dBGain * (1.0f + inputAmplification * 7.0f) * clearPopCancelValue);
 
-      // leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
-      // rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
-      leftOutput = ((leftInput * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
-      rightOutput = ((rightInput * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
+      leftOutput = ((leftInput * plateDry * 0.1) + (verb.getLeftOutput() * plateWet * clearPopCancelValue));
+      rightOutput = ((rightInput * plateDry * 0.1) + (verb.getRightOutput() * plateWet * clearPopCancelValue));
 
       s_L = leftOutput;
       s_R = rightOutput;
@@ -606,53 +629,46 @@ int main() {
 		} else if (is_factory_reset_mode) {
       hw.ProcessAllControls();
 
-      // if (hw.switches[Hothouse::FOOTSWITCH_1].RisingEdge() || hw.switches[Hothouse::FOOTSWITCH_2].RisingEdge()) {
-      //   // Exit firmware reset mode
-      //   hw.StartAudio(AudioCallback);
-      //   factory_reset_stage = 0;
-      //   is_factory_reset_mode = false;
-      // } else {
-        static uint32_t last_led_toggle_time = 0;
-        static bool led_toggle = false;
-        static uint32_t blink_interval = 1000;
-        uint32_t now = System::GetNow();
-        uint32_t elapsed_time = now - last_led_toggle_time;
-        if (elapsed_time >= blink_interval) {
-          // Alternate the LED lights in factory reset mode
-          last_led_toggle_time = now;
-          led_toggle = !led_toggle;
-          led_left.Set(led_toggle ? 1.0f : 0.0f);
-          led_right.Set(led_toggle ? 0.0f : 1.0f);
-          led_left.Update();
-          led_right.Update();
-        }
+      static uint32_t last_led_toggle_time = 0;
+      static bool led_toggle = false;
+      static uint32_t blink_interval = 1000;
+      uint32_t now = System::GetNow();
+      uint32_t elapsed_time = now - last_led_toggle_time;
+      if (elapsed_time >= blink_interval) {
+        // Alternate the LED lights in factory reset mode
+        last_led_toggle_time = now;
+        led_toggle = !led_toggle;
+        led_left.Set(led_toggle ? 1.0f : 0.0f);
+        led_right.Set(led_toggle ? 0.0f : 1.0f);
+        led_left.Update();
+        led_right.Update();
+      }
 
-        float low_knob_threshold = 0.05;
-        float high_knob_threshold = 0.95;
-        float blink_faster_amount = 300; // each stage removes this many MS from the factory reset blinking
-        float knob_1_value = p_knob_1.Process();
-        if (factory_reset_stage == 0 && knob_1_value >= high_knob_threshold) {
-          factory_reset_stage++;
-          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
-          quick_led_flash();          
-        } else if (factory_reset_stage == 1 && knob_1_value <= low_knob_threshold) {
-          factory_reset_stage++;
-          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
-          quick_led_flash();          
-        } else if (factory_reset_stage == 2 && knob_1_value >= high_knob_threshold) {
-          factory_reset_stage++;
-          blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
-          quick_led_flash();          
-        } else if (factory_reset_stage == 3 && knob_1_value <= low_knob_threshold) {
-          SavedSettings.RestoreDefaults();
-          load_settings();
-          quick_led_flash();          
+      float low_knob_threshold = 0.05;
+      float high_knob_threshold = 0.95;
+      float blink_faster_amount = 300; // each stage removes this many MS from the factory reset blinking
+      float knob_1_value = p_knob_1.Process();
+      if (factory_reset_stage == 0 && knob_1_value >= high_knob_threshold) {
+        factory_reset_stage++;
+        blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+        quick_led_flash();          
+      } else if (factory_reset_stage == 1 && knob_1_value <= low_knob_threshold) {
+        factory_reset_stage++;
+        blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+        quick_led_flash();          
+      } else if (factory_reset_stage == 2 && knob_1_value >= high_knob_threshold) {
+        factory_reset_stage++;
+        blink_interval -= blink_faster_amount; // make the blinking faster as a UI feedback that the stage has been met
+        quick_led_flash();          
+      } else if (factory_reset_stage == 3 && knob_1_value <= low_knob_threshold) {
+        SavedSettings.RestoreDefaults();
+        load_settings();
+        quick_led_flash();          
 
-          hw.StartAudio(AudioCallback);
-          factory_reset_stage = 0;
-          is_factory_reset_mode = false;
-        }
-      // }
+        hw.StartAudio(AudioCallback);
+        factory_reset_stage = 0;
+        is_factory_reset_mode = false;
+      }
     }
     hw.DelayMs(10);
 
